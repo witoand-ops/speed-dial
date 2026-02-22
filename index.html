@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Speed Dial Groups</title>
-<script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+<script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 
@@ -756,6 +756,16 @@ renderGroups();
 renderDials();
 updateClock();
 setInterval(updateClock, 1000);
+
+// Wait for Google API to load, then init auth
+function waitForGapi() {
+  if (typeof gapi !== 'undefined' && gapi.load) {
+    gapiLoaded();
+  } else {
+    setTimeout(waitForGapi, 200);
+  }
+}
+waitForGapi();
 </script>
 </body>
 </html>
