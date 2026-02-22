@@ -923,23 +923,47 @@ function openSettings() {
     html += '<div style="font-size:12px;font-weight:500;margin-bottom:6px">Kategóriák</div>';
     if (cats.length > 0) {
       html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
-      cats.forEach(function(c) { html += '<span style="font-size:11px;padding:3px 8px;background:rgba(124,131,255,.12);border-radius:4px;color:#7c83ff">' + esc(c) + '</span>'; });
+      cats.forEach(function(c) {
+        var cnt = groups.filter(function(g) { return g.cat === c; }).length;
+        html += '<span style="font-size:11px;padding:3px 8px;background:rgba(124,131,255,.12);border-radius:4px;color:#7c83ff">' + esc(c) + ' (' + cnt + ')</span>';
+      });
       html += '</div>';
     }
     html += '<div style="display:flex;gap:4px"><input type="text" id="newCatInput" placeholder="Új kategória neve..." style="flex:1;font-size:11px;padding:4px 8px"><button class="sbtn" id="addCatBtn" style="padding:3px 8px;font-size:11px">Hozzáadás</button></div>';
     html += '</div>';
-    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:10px">';
+    // Bulk categorization
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:10px;margin-bottom:10px">';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:6px">Tömeges kategorizálás</div>';
+    html += '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">';
+    html += '<select id="bulkCatSel" style="font-size:12px;padding:4px 8px;background:#1c1c35;color:#e8e8f0;border:1px solid rgba(124,131,255,.15);border-radius:6px;min-width:140px"><option value="">(válassz kategóriát)</option>';
+    cats.forEach(function(c) { html += '<option value="' + esc(c) + '">' + esc(c) + '</option>'; });
+    html += '</select>';
+    html += '<button class="pbtn" id="bulkApplyBtn" style="font-size:11px;padding:4px 12px">Alkalmazás kijelöltekre</button>';
+    html += '<button class="sbtn" id="bulkClearBtn" style="font-size:11px;padding:4px 8px;color:#ff5c6c">Kategória eltávolítása</button>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px;margin-bottom:8px">';
+    html += '<button class="sbtn" id="bulkSelAll" style="font-size:10px;padding:2px 8px">Mind kijelöl</button>';
+    html += '<button class="sbtn" id="bulkSelNone" style="font-size:10px;padding:2px 8px">Kijelölés törlése</button>';
+    html += '<button class="sbtn" id="bulkSelUncat" style="font-size:10px;padding:2px 8px">Csak kategorizálatlanok</button>';
+    html += '</div>';
+    html += '</div>';
+    // Group list with checkboxes
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:8px;max-height:400px;overflow-y:auto" id="grpList">';
     groups.forEach(function(g, i) {
       var isHome = (settings.homeGroup === i) || (!settings.homeGroup && i === 0);
-      html += '<div class="srow" style="flex-wrap:wrap"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><input type="color" value="' + g.c + '" data-gc="' + i + '" style="width:26px;height:26px;border:none;cursor:pointer;flex-shrink:0"><div style="min-width:0"><span style="font-size:12px;font-weight:500">' + esc(g.n) + (isHome ? ' &#127968;' : '') + '</span><div style="font-size:10px;color:#606080">' + g.d.length + ' db' + (g.cat ? ' · ' + esc(g.cat) : '') + '</div></div></div>';
-      html += '<div style="display:flex;gap:4px;flex-wrap:wrap">';
-      // Category select
-      html += '<select data-gcat="' + i + '" style="font-size:11px;padding:2px 4px;background:#1c1c35;color:#9090b0;border:1px solid rgba(124,131,255,.15);border-radius:4px"><option value="">(nincs)</option>';
+      html += '<div class="srow" style="flex-wrap:wrap;padding:5px 0;min-height:0">';
+      html += '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">';
+      html += '<input type="checkbox" class="bulk-cb" data-bi="' + i + '" style="width:16px;height:16px;accent-color:#7c83ff;flex-shrink:0">';
+      html += '<input type="color" value="' + g.c + '" data-gc="' + i + '" style="width:20px;height:20px;border:none;cursor:pointer;flex-shrink:0">';
+      html += '<div style="min-width:0;overflow:hidden"><span style="font-size:11px;font-weight:500;white-space:nowrap">' + esc(g.n) + (isHome ? ' &#127968;' : '') + '</span>';
+      html += '<div style="font-size:9px;color:#606080">' + g.d.length + ' db' + (g.cat ? ' · <span style="color:#7c83ff">' + esc(g.cat) + '</span>' : ' · <i>nincs kategória</i>') + '</div></div></div>';
+      html += '<div style="display:flex;gap:3px;flex-shrink:0">';
+      html += '<select data-gcat="' + i + '" style="font-size:10px;padding:1px 3px;background:#1c1c35;color:#9090b0;border:1px solid rgba(124,131,255,.15);border-radius:4px;max-width:90px"><option value="">(nincs)</option>';
       cats.forEach(function(c) { html += '<option value="' + esc(c) + '"' + (g.cat === c ? ' selected' : '') + '>' + esc(c) + '</option>'; });
       html += '</select>';
-      if (!isHome) html += '<button class="sbtn" style="padding:3px 8px;font-size:11px" data-ghome="' + i + '" title="Kezdőlap">&#127968;</button>';
-      html += '<button class="sbtn" style="padding:3px 8px;font-size:11px" data-gren="' + i + '">Átnevezés</button>';
-      html += '<button class="sbtn" style="padding:3px 8px;font-size:11px;color:#ff5c6c" data-gdel="' + i + '">Törlés</button>';
+      if (!isHome) html += '<button class="sbtn" style="padding:2px 6px;font-size:10px" data-ghome="' + i + '" title="Kezdőlap">&#127968;</button>';
+      html += '<button class="sbtn" style="padding:2px 6px;font-size:10px" data-gren="' + i + '">&#9998;</button>';
+      html += '<button class="sbtn" style="padding:2px 6px;font-size:10px;color:#ff5c6c" data-gdel="' + i + '">&#10005;</button>';
       html += '</div></div>';
     });
     html += '</div>';
@@ -1286,17 +1310,63 @@ function openSettings() {
         var inp = document.getElementById('newCatInput');
         var v = inp ? inp.value.trim() : '';
         if (!v) { toast('Adj meg nevet!'); return; }
-        // Add as a dummy to ensure it shows in dropdowns - assign to first uncategorized group if any
-        var uncatGroup = groups.find(function(g) { return !g.cat; });
-        if (uncatGroup) {
-          uncatGroup.cat = v;
-          save();
-          toast('"' + uncatGroup.n + '" hozzárendelve: ' + v);
+        // Check if exists
+        var existing = getCategories();
+        if (existing.indexOf(v) >= 0) { toast('Ez a kategória már létezik!'); return; }
+        // Apply to selected groups, or just add to first uncategorized
+        var checked = document.querySelectorAll('.bulk-cb:checked');
+        if (checked.length > 0) {
+          checked.forEach(function(cb) { groups[parseInt(cb.dataset.bi)].cat = v; });
+          save(); toast(checked.length + ' csoport → ' + v);
         } else {
-          toast('Kategória: ' + v + ' — rendeld hozzá a csoportokhoz!');
+          toast('Kategória "' + v + '" létrehozva — jelölj ki csoportokat!');
         }
-        renderGroups();
+        renderGroups(); openSettings();
+      };
+    }
+    // Bulk apply
+    var bulkApplyBtn = document.getElementById('bulkApplyBtn');
+    if (bulkApplyBtn) {
+      bulkApplyBtn.onclick = function() {
+        var sel = document.getElementById('bulkCatSel');
+        var cat = sel ? sel.value : '';
+        if (!cat) { toast('Válassz kategóriát!'); return; }
+        var checked = document.querySelectorAll('.bulk-cb:checked');
+        if (checked.length === 0) { toast('Jelölj ki csoportokat!'); return; }
+        checked.forEach(function(cb) { groups[parseInt(cb.dataset.bi)].cat = cat; });
+        save(); renderGroups();
+        toast(checked.length + ' csoport → ' + cat);
         openSettings();
+      };
+    }
+    // Bulk clear category
+    var bulkClearBtn = document.getElementById('bulkClearBtn');
+    if (bulkClearBtn) {
+      bulkClearBtn.onclick = function() {
+        var checked = document.querySelectorAll('.bulk-cb:checked');
+        if (checked.length === 0) { toast('Jelölj ki csoportokat!'); return; }
+        checked.forEach(function(cb) { groups[parseInt(cb.dataset.bi)].cat = ''; });
+        save(); renderGroups();
+        toast(checked.length + ' csoport kategóriája eltávolítva');
+        openSettings();
+      };
+    }
+    // Select all / none / uncategorized
+    var bulkSelAll = document.getElementById('bulkSelAll');
+    if (bulkSelAll) {
+      bulkSelAll.onclick = function() { document.querySelectorAll('.bulk-cb').forEach(function(cb) { cb.checked = true; }); };
+    }
+    var bulkSelNone = document.getElementById('bulkSelNone');
+    if (bulkSelNone) {
+      bulkSelNone.onclick = function() { document.querySelectorAll('.bulk-cb').forEach(function(cb) { cb.checked = false; }); };
+    }
+    var bulkSelUncat = document.getElementById('bulkSelUncat');
+    if (bulkSelUncat) {
+      bulkSelUncat.onclick = function() {
+        document.querySelectorAll('.bulk-cb').forEach(function(cb) {
+          var idx = parseInt(cb.dataset.bi);
+          cb.checked = !groups[idx].cat;
+        });
       };
     }
     // Group rename
