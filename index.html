@@ -889,7 +889,7 @@ function openSettings() {
         var dataStr = JSON.stringify(dataObj);
         // Get full page source
         var pageHtml = document.documentElement.outerHTML;
-        // Inject embedded data as a script before closing </script>
+        // Inject embedded data as a script before closing tag
         var marker = '// === INIT ===';
         var embedScript = '// === EMBEDDED DATA ===\nvar _embedded = ' + dataStr + ';\nif(_embedded){groups=_embedded.groups||groups;settings=Object.assign(settings,_embedded.settings||{});notes=_embedded.notes||notes;if(typeof _embedded.activeGroup==="number")activeGroup=_embedded.activeGroup;}\n';
         pageHtml = pageHtml.replace(marker, embedScript + marker);
