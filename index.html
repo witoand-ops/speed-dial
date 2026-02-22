@@ -83,7 +83,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 #loginScreen p{color:#9090b0;font-size:13px;max-width:380px;text-align:center;line-height:1.6}
 #loginScreen .note{color:#606080;font-size:11px;margin-top:12px;text-align:center;line-height:1.7;max-width:420px}
 #loginScreen .note a{color:#7c83ff}
-#authBtn{padding:12px 28px;border-radius:24px;border:none;background:#7c83ff;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:none}
+#authBtn{padding:12px 28px;border-radius:24px;border:none;background:#7c83ff;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
 #authBtn:hover{background:#9198ff}
 #authLoading{color:#606080;font-size:12px}
 #appScreen{display:none}
@@ -102,7 +102,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
   <h1>&#8862; Speed Dial Groups</h1>
   <p>Jelentkezz be Google fiókoddal.<br>Az adataid a saját Google Drive-odban tárolódnak, biztonságban.</p>
   <button id="authBtn">&#128274; Bejelentkezés Google-lel</button>
-  <div id="authLoading">Betöltés...</div>
+  <div id="authLoading" style="font-size:11px;color:#606080">Google API betöltése...</div>
   <div class="note">
     Első használathoz szükséges egy Google Cloud OAuth Client ID.<br>
     Részletes útmutató: <a href="https://github.com/user/speed-dial-groups#readme" target="_blank">README</a>
@@ -205,6 +205,17 @@ function showLogin() {
   document.getElementById('authLoading').style.display = 'none';
   document.getElementById('authBtn').style.display = 'inline-block';
 }
+
+// Fallback: if Google APIs don't load within 5 seconds, show button anyway with error
+var _loginTimeout = setTimeout(function() {
+  var btn = document.getElementById('authBtn');
+  var loading = document.getElementById('authLoading');
+  if (btn && btn.style.display === 'none') {
+    loading.textContent = 'Google API betöltési hiba. Próbáld kikapcsolni az adblocker-t, majd frissítsd az oldalt.';
+    loading.style.color = '#ff5c6c';
+    btn.style.display = 'inline-block';
+  }
+}, 5000);
 
 function onToken(resp) {
   if (resp.error) { console.error('Token error:', resp); return; }
@@ -345,7 +356,12 @@ function driveSaveNow() {
 
 // Auth button handler
 document.getElementById('authBtn').addEventListener('click', function() {
-  if (tokenClient) tokenClient.requestAccessToken();
+  if (tokenClient) {
+    tokenClient.requestAccessToken();
+  } else {
+    document.getElementById('authLoading').textContent = 'A Google API még nem töltődött be. Próbáld kikapcsolni az adblocker-t, majd frissítsd az oldalt (Ctrl+Shift+R).';
+    document.getElementById('authLoading').style.color = '#ff5c6c';
+  }
 });
 
 // === SPEED DIAL APP ===
