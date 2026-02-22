@@ -94,6 +94,10 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .lout:hover{background:rgba(255,92,108,.1)}
 .sync{font-size:10px;color:#606080;position:fixed;bottom:22px;right:140px;pointer-events:none;z-index:50}
 
+
+.dial .refresh-btn{position:absolute;top:5px;left:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:#fff;font-size:12px;cursor:pointer;z-index:3;opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center}
+.dial:hover .refresh-btn{opacity:1}
+.dial .refresh-btn:hover{background:rgba(124,131,255,.8)}
 </style>
 </head>
 <body>
@@ -374,7 +378,7 @@ var groups, settings, notes, activeGroup, page, fails;
 
 function defaults() {
   groups = [
-    {n:'Kezdőlap',c:'#7c83ff',d:[
+    {n:'Kezdőlap',c:'#7c83ff',cols:5,dw:220,dh:170,pp:15,d:[
       {i:'1',t:'Google',u:'https://www.google.com',m:''},
       {i:'2',t:'YouTube',u:'https://www.youtube.com',m:''},
       {i:'3',t:'Gmail',u:'https://mail.google.com',m:''},
@@ -386,18 +390,18 @@ function defaults() {
       {i:'9',t:'ChatGPT',u:'https://chat.openai.com',m:''},
       {i:'10',t:'Amazon',u:'https://www.amazon.com',m:''}
     ]},
-    {n:'Munka',c:'#2ecc71',d:[
+    {n:'Munka',c:'#2ecc71',cols:5,dw:220,dh:170,pp:15,d:[
       {i:'11',t:'Drive',u:'https://drive.google.com',m:''},
       {i:'12',t:'Slack',u:'https://slack.com',m:''},
       {i:'13',t:'Notion',u:'https://www.notion.so',m:''}
     ]},
-    {n:'Szórakozás',c:'#e74c3c',d:[
+    {n:'Szórakozás',c:'#e74c3c',cols:5,dw:220,dh:170,pp:15,d:[
       {i:'14',t:'Netflix',u:'https://www.netflix.com',m:''},
       {i:'15',t:'Spotify',u:'https://www.spotify.com',m:''},
       {i:'16',t:'Twitch',u:'https://www.twitch.tv',m:''}
     ]}
   ];
-  settings = {cols:5,dw:220,dh:170,pp:15,eng:'google',clk:true,tabs:true,nt:true};
+  settings = {eng:'google',clk:true,tabs:true,nt:true};
   notes = '';
   activeGroup = 0;
   page = 0;
@@ -460,11 +464,12 @@ function renderDials() {
   var g = curGroup();
   if (!g) return;
   grid.innerHTML = '';
-  var pp = settings.pp || 15;
+  // Per-group settings with fallback
+  var pp = g.pp || 15;
   var total = Math.max(1, Math.ceil(g.d.length / pp));
   if (page >= total) page = total - 1;
-  var dw = settings.dw || 220, dh = settings.dh || 170;
-  grid.style.gridTemplateColumns = 'repeat(' + (settings.cols||5) + ',' + dw + 'px)';
+  var dw = g.dw || 220, dh = g.dh || 170;
+  grid.style.gridTemplateColumns = 'repeat(' + (g.cols||5) + ',' + dw + 'px)';
 
   var start = page * pp;
   var slice = g.d.slice(start, start + pp);
@@ -478,17 +483,35 @@ function renderDials() {
     var domain = getDom(d.u);
     var letter = (d.t || domain || '?')[0].toUpperCase();
     var col = getColor(domain || d.t || '?');
+    var imgSrc = d.img || screenshot(d.u);
     var h = '<div class="thumb">';
     if (!fails[d.i]) {
-      h += '<img src="' + esc(screenshot(d.u)) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+      h += '<img src="' + esc(imgSrc) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
       h += '<div class="fallback" style="display:none;background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, dw * 0.18) + 'px">' + letter + '</div>';
     } else {
       h += '<div class="fallback" style="background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, dw * 0.18) + 'px">' + letter + '</div>';
     }
     h += '</div><div class="grad"></div>';
+    h += '<button class="refresh-btn" data-dial-idx="' + idx + '" title="Kép frissítése">&#8635;</button>';
     h += '<div class="info"><img src="' + esc(favicon(d.u)) + '" onerror="this.style.display=\'none\'"><span>' + esc(d.t || domain || '?') + '</span></div>';
     el.innerHTML = h;
-    el.onclick = function() { window.open(d.u, settings.nt ? '_blank' : '_self'); };
+    el.onclick = function(e) {
+      if (e.target.closest('.refresh-btn')) return;
+      window.open(d.u, settings.nt ? '_blank' : '_self');
+    };
+    var refreshBtn = el.querySelector('.refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.onclick = function(e) {
+        e.stopPropagation();
+        // Force refresh screenshot with cache-bust
+        var newUrl = screenshot(d.u) + '?t=' + Date.now();
+        d.img = newUrl;
+        delete fails[d.i];
+        save();
+        renderDials();
+        toast('Kép frissítése...');
+      };
+    }
     grid.appendChild(el);
   });
 
@@ -657,7 +680,7 @@ function openSettings() {
   var s = settings;
   var html = '<div class="mhead"><h3>&#9881; Beállítások</h3><button class="closebtn" onclick="closeModal()">&times;</button></div><div class="mbody">';
   html += '<div class="stabs">';
-  [['general','Általános'],['dials','Tárcsák'],['groups','Csoportok'],['search','Keresés']].forEach(function(x) {
+  [['general','Általános'],['dials','Tárcsák'],['groups','Csoportok'],['search','Keresés'],['data','Adatok']].forEach(function(x) {
     html += '<button class="stab' + (sTab === x[0] ? ' on' : '') + '" data-st="' + x[0] + '">' + x[1] + '</button>';
   });
   html += '</div>';
@@ -668,10 +691,13 @@ function openSettings() {
     html += '<div class="srow"><span style="font-size:12px;font-weight:500">Új fülön nyitás</span><input type="checkbox" id="xNt"' + (s.nt ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#7c83ff"></div>';
   }
   if (sTab === 'dials') {
-    [['cols','Oszlopok',2,10,s.cols||5],['dw','Szélesség (px)',120,400,s.dw||220],['dh','Magasság (px)',100,350,s.dh||170],['pp','Tárcsák / oldal',5,50,s.pp||15]].forEach(function(x) {
+    var cg = curGroup();
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:10px">Beállítások a(z) <b style="color:#7c83ff">' + esc(cg.n) + '</b> csoporthoz</div>';
+    [['cols','Oszlopok',2,10,cg.cols||5],['dw','Szélesség (px)',120,400,cg.dw||220],['dh','Magasság (px)',100,350,cg.dh||170],['pp','Tárcsák / oldal',5,50,cg.pp||15]].forEach(function(x) {
       html += '<div class="rng"><div class="rh"><span style="font-size:12px">' + x[1] + '</span><span class="rv" id="sv_' + x[0] + '">' + x[4] + '</span></div>';
       html += '<input type="range" id="sr_' + x[0] + '" min="' + x[2] + '" max="' + x[3] + '" value="' + x[4] + '"></div>';
     });
+    html += '<div style="margin-top:10px"><button class="sbtn" id="copySettingsAll" style="font-size:11px;padding:4px 10px">Alkalmazás minden csoportra</button></div>';
   }
   if (sTab === 'groups') {
     groups.forEach(function(g, i) {
@@ -688,6 +714,16 @@ function openSettings() {
       html += '<label style="display:flex;align-items:center;gap:8px;padding:7px;cursor:pointer;border-radius:6px;margin-bottom:2px;' + (s.eng === k ? 'background:rgba(124,131,255,.1)' : '') + '"><input type="radio" name="xEng" value="' + k + '"' + (s.eng === k ? ' checked' : '') + '><span style="font-size:13px">' + n + '</span></label>';
     });
   }
+  if (sTab === 'data') {
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:12px">Export / Import</div>';
+    html += '<div style="display:flex;gap:8px;margin-bottom:16px"><button class="pbtn" id="exportBtn" style="font-size:12px">&#128190; Exportálás (JSON)</button><button class="sbtn" id="importBtn" style="font-size:12px">&#128194; Importálás</button></div>';
+    html += '<input type="file" id="importFile" accept=".json" style="display:none">';
+    html += '<div style="font-size:11px;color:#606080;margin-top:8px">Az exportált fájl tartalmazza az összes csoportot, tárcsát, beállítást és jegyzetet.</div>';
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);margin-top:16px;padding-top:12px">';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px;color:#ff5c6c">Veszélyes zóna</div>';
+    html += '<button class="sbtn" id="resetBtn" style="font-size:11px;color:#ff5c6c;border-color:rgba(255,92,108,.3)">&#128465; Összes adat törlése</button>';
+    html += '</div>';
+  }
   html += '</div><div class="mfoot"><button class="sbtn" onclick="closeModal()">Bezárás</button><button class="pbtn" id="setSave">Mentés</button></div>';
   showModal(html, true);
 
@@ -702,6 +738,71 @@ function openSettings() {
       var sv = document.getElementById('sv_' + k);
       if (sl && sv) sl.oninput = function() { sv.textContent = sl.value; };
     });
+    // Copy settings to all groups
+    var csBtn = document.getElementById('copySettingsAll');
+    if (csBtn) {
+      csBtn.onclick = function() {
+        var v = function(id) { return document.getElementById(id); };
+        var nc = parseInt(v('sr_cols').value)||5, nw = parseInt(v('sr_dw').value)||220, nh = parseInt(v('sr_dh').value)||170, np = parseInt(v('sr_pp').value)||15;
+        groups.forEach(function(g) { g.cols = nc; g.dw = nw; g.dh = nh; g.pp = np; });
+        save(); toast('Minden csoportra alkalmazva');
+      };
+    }
+    // Export
+    var expBtn = document.getElementById('exportBtn');
+    if (expBtn) {
+      expBtn.onclick = function() {
+        var data = JSON.stringify({groups: groups, settings: settings, notes: notes, activeGroup: activeGroup, version: '3.0'}, null, 2);
+        var blob = new Blob([data], {type: 'application/json'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'speed-dial-backup-' + new Date().toISOString().slice(0,10) + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('Exportálva');
+      };
+    }
+    // Import
+    var impBtn = document.getElementById('importBtn');
+    var impFile = document.getElementById('importFile');
+    if (impBtn && impFile) {
+      impBtn.onclick = function() { impFile.click(); };
+      impFile.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            var data = JSON.parse(ev.target.result);
+            if (!data.groups || !Array.isArray(data.groups)) { toast('Hibás fájl!'); return; }
+            if (confirm('Importálás? Ez felülírja a jelenlegi adatokat!')) {
+              groups = data.groups;
+              if (data.settings) settings = Object.assign(settings, data.settings);
+              if (data.notes !== undefined) notes = data.notes;
+              if (typeof data.activeGroup === 'number') activeGroup = data.activeGroup;
+              if (activeGroup >= groups.length) activeGroup = 0;
+              page = 0;
+              save(); applySettings(); renderGroups(); renderDials();
+              toast('Importálva: ' + groups.length + ' csoport');
+              closeModal();
+            }
+          } catch(err) { toast('Hibás JSON fájl!'); }
+        };
+        reader.readAsText(file);
+      };
+    }
+    // Reset
+    var rstBtn = document.getElementById('resetBtn');
+    if (rstBtn) {
+      rstBtn.onclick = function() {
+        if (confirm('FIGYELEM: Ez törli az összes adatodat! Biztosan folytatod?')) {
+          defaults();
+          save(); applySettings(); renderGroups(); renderDials();
+          toast('Adatok törölve');
+          closeModal();
+        }
+      };
+    }
     // Group color
     document.querySelectorAll('[data-gc]').forEach(function(inp) {
       inp.oninput = function() { groups[parseInt(inp.dataset.gc)].c = inp.value; save(); renderGroups(); };
@@ -720,10 +821,12 @@ function openSettings() {
       if (v('xClk')) settings.clk = v('xClk').checked;
       if (v('xTabs')) settings.tabs = v('xTabs').checked;
       if (v('xNt')) settings.nt = v('xNt').checked;
-      if (v('sr_cols')) settings.cols = parseInt(v('sr_cols').value) || 5;
-      if (v('sr_dw')) settings.dw = parseInt(v('sr_dw').value) || 220;
-      if (v('sr_dh')) settings.dh = parseInt(v('sr_dh').value) || 170;
-      if (v('sr_pp')) settings.pp = parseInt(v('sr_pp').value) || 15;
+      // Save per-group dial settings
+      var cg = curGroup();
+      if (v('sr_cols')) cg.cols = parseInt(v('sr_cols').value) || 5;
+      if (v('sr_dw')) cg.dw = parseInt(v('sr_dw').value) || 220;
+      if (v('sr_dh')) cg.dh = parseInt(v('sr_dh').value) || 170;
+      if (v('sr_pp')) cg.pp = parseInt(v('sr_pp').value) || 15;
       var en = document.querySelector('input[name=xEng]:checked');
       if (en) settings.eng = en.value;
       page = 0; save(); applySettings(); renderDials(); toast('Mentve'); closeModal();
@@ -743,7 +846,7 @@ document.getElementById('btnNotes').addEventListener('click', function(e) { e.st
 document.getElementById('btnSettings').addEventListener('click', function(e) { e.stopPropagation(); openSettings(); });
 document.getElementById('addGroupBtn').addEventListener('click', function() {
   var n = prompt('Új csoport neve:');
-  if (n && n.trim()) { groups.push({n: n.trim(), c: COLORS[groups.length % COLORS.length], d: []}); activeGroup = groups.length - 1; page = 0; save(); renderGroups(); renderDials(); toast('Létrehozva'); }
+  if (n && n.trim()) { groups.push({n: n.trim(), c: COLORS[groups.length % COLORS.length], cols:5, dw:220, dh:170, pp:15, d: []}); activeGroup = groups.length - 1; page = 0; save(); renderGroups(); renderDials(); toast('Létrehozva'); }
 });
 document.getElementById('themebtn').addEventListener('click', function() {
   var isL = document.documentElement.getAttribute('data-t') === 'l';
