@@ -10,6 +10,32 @@
 
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:system-ui,sans-serif;background:#0f0f1a;color:#e8e8f0;min-height:100vh}
+[data-t=l] body{background:#f0f0f8;color:#1a1a2e}
+[data-t=l] header{background:rgba(240,240,248,.9)}
+[data-t=l] .tabs{border-color:rgba(100,100,180,.15)}
+[data-t=l] .tab{color:#555570}
+[data-t=l] .tab.on{color:#fff}
+[data-t=l] .dial{background:#fff;border-color:rgba(100,100,180,.15)}
+[data-t=l] .dial.add{background:transparent}
+[data-t=l] #themebtn{background:#fff;color:#555570;border-color:rgba(100,100,180,.15)}
+[data-t=l] .clock .time,[data-t=l] .clock .date{color:#333}
+[data-t=l] .overlay{background:rgba(0,0,0,.4)}
+[data-t=l] .mpanel{background:#fff;border-color:rgba(100,100,180,.15)}
+[data-t=l] .mpanel .mhead{border-color:rgba(100,100,180,.15)}
+[data-t=l] .mpanel .mfoot{border-color:rgba(100,100,180,.15)}
+[data-t=l] .mpanel input[type=text],[data-t=l] .mpanel input[type=url],[data-t=l] .mpanel input[type=number],[data-t=l] .mpanel textarea,[data-t=l] .mpanel select{background:#f0f0f8;border-color:rgba(100,100,180,.15);color:#1a1a2e}
+[data-t=l] .mpanel label{color:#555570}
+[data-t=l] .closebtn{color:#555570}
+[data-t=l] .sbtn{color:#555570;border-color:rgba(100,100,180,.15)}
+[data-t=l] .stab{color:#555570}
+[data-t=l] .srow{border-color:rgba(100,100,180,.08)}
+[data-t=l] .rng{border-color:rgba(100,100,180,.08)}
+[data-t=l] .toast{background:#fff;color:#1a1a2e;border-color:rgba(100,100,180,.15)}
+[data-t=l] .hb{color:#555570}
+[data-t=l] .hb:hover{color:#5c63e0;background:rgba(92,99,224,.1)}
+[data-t=l] .addg{border-color:rgba(100,100,180,.3);color:#999}
+[data-t=l] .tsi{border-color:rgba(100,100,180,.12)}
+[data-t=l] .mvi{background:#f8f8fc;border-color:rgba(100,100,180,.12)}
 header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:rgba(15,15,26,.9);border-bottom:1px solid rgba(124,131,255,.15);position:sticky;top:0;z-index:100}
 .logo{font-weight:700;font-size:15px;color:#7c83ff}
 .hbtns{display:flex;gap:4px}
@@ -188,7 +214,7 @@ function initGIS() {
   });
 
   // Check saved token
-  var saved = sessionStorage.getItem('sd_gtoken');
+  var saved = localStorage.getItem('sd_gtoken');
   if (saved) {
     accessToken = saved;
     gapi.client.setToken({access_token: accessToken});
@@ -196,9 +222,14 @@ function initGIS() {
     gapi.client.request({path: 'https://www.googleapis.com/oauth2/v2/userinfo'})
     .then(function(r) { enterApp(r.result); })
     .catch(function() {
-      sessionStorage.removeItem('sd_gtoken');
+      // Token expired - try silent refresh
+      localStorage.removeItem('sd_gtoken');
       accessToken = null;
-      showLogin();
+      if (tokenClient) {
+        try { tokenClient.requestAccessToken({prompt: ''}); } catch(e) { showLogin(); }
+      } else {
+        showLogin();
+      }
     });
   } else {
     showLogin();
@@ -224,7 +255,7 @@ var _loginTimeout = setTimeout(function() {
 function onToken(resp) {
   if (resp.error) { console.error('Token error:', resp); return; }
   accessToken = resp.access_token;
-  sessionStorage.setItem('sd_gtoken', accessToken);
+  localStorage.setItem('sd_gtoken', accessToken);
   gapi.client.setToken({access_token: accessToken});
   gapi.client.request({path: 'https://www.googleapis.com/oauth2/v2/userinfo'})
   .then(function(r) { enterApp(r.result); })
@@ -251,7 +282,7 @@ function enterApp(user) {
   lb.textContent = 'Kilépés';
   lb.addEventListener('click', function() {
     try { google.accounts.oauth2.revoke(accessToken); } catch(e) {}
-    sessionStorage.removeItem('sd_gtoken');
+    localStorage.removeItem('sd_gtoken');
     location.reload();
   });
   bar.appendChild(lb);
@@ -860,6 +891,14 @@ function openSettings() {
 function applySettings() {
   document.getElementById('clockWidget').style.display = settings.clk ? '' : 'none';
   document.getElementById('tabsBar').style.display = settings.tabs ? 'flex' : 'none';
+  // Apply theme
+  if (settings.theme === 'light') {
+    document.documentElement.setAttribute('data-t', 'l');
+    document.getElementById('themebtn').textContent = '🌞 Téma';
+  } else {
+    document.documentElement.setAttribute('data-t', '');
+    document.getElementById('themebtn').textContent = '🌙 Téma';
+  }
 }
 
 // === BUTTON HANDLERS ===
@@ -875,6 +914,8 @@ document.getElementById('themebtn').addEventListener('click', function() {
   var isL = document.documentElement.getAttribute('data-t') === 'l';
   document.documentElement.setAttribute('data-t', isL ? '' : 'l');
   document.getElementById('themebtn').textContent = isL ? '🌙 Téma' : '🌞 Téma';
+  settings.theme = isL ? 'dark' : 'light';
+  save();
 });
 
 // === CLOCK ===
