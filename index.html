@@ -551,12 +551,19 @@ function renderDials() {
 }
 
 // === DIAL MODAL ===
-function openDialModal(editDial) {
+function openDialModal(editDial, prefillUrl, prefillTitle) {
   var isEdit = !!editDial;
   var html = '<div class="mhead"><h3>' + (isEdit ? 'Szerkesztés' : 'Új tárcsa') + '</h3><button class="closebtn" onclick="closeModal()">&times;</button></div>';
   html += '<div class="mbody">';
-  html += '<label>URL<input type="url" id="fUrl" placeholder="https://..." value="' + (isEdit ? esc(editDial.u) : '') + '"></label>';
-  html += '<label>Cím<input type="text" id="fTit" placeholder="Név" value="' + (isEdit ? esc(editDial.t) : '') + '"></label>';
+  if (!isEdit && groups.length > 1) {
+    html += '<label>Csoport<select id="fGroup">';
+    groups.forEach(function(g, i) {
+      html += '<option value="' + i + '"' + (i === activeGroup ? ' selected' : '') + '>' + esc(g.n) + '</option>';
+    });
+    html += '</select></label>';
+  }
+  html += '<label>URL<input type="url" id="fUrl" placeholder="https://..." value="' + esc(isEdit ? editDial.u : (prefillUrl || '')) + '"></label>';
+  html += '<label>Cím<input type="text" id="fTit" placeholder="Név" value="' + esc(isEdit ? editDial.t : (prefillTitle || '')) + '"></label>';
   html += '<label>Jegyzet<textarea id="fNote" placeholder="Opcionális...">' + (isEdit ? esc(editDial.m || '') : '') + '</textarea></label>';
   html += '</div><div class="mfoot"><button class="sbtn" onclick="closeModal()">Mégse</button><button class="pbtn" id="fSave">Mentés</button></div>';
   showModal(html);
@@ -569,14 +576,20 @@ function openDialModal(editDial) {
       if (!u) { toast('Adj meg URL-t!'); return; }
       if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
       if (!t) t = getDom(u) || 'Névtelen';
-      var g = curGroup();
       if (isEdit) {
+        var g = curGroup();
         var x = g.d.find(function(x) { return x.i === editDial.i; });
         if (x) { x.u = u; x.t = t; x.m = m; }
         toast('Frissítve');
       } else {
-        g.d.push({i: uid(), t: t, u: u, m: m});
-        toast('Hozzáadva');
+        var targetIdx = activeGroup;
+        var sel = document.getElementById('fGroup');
+        if (sel) targetIdx = parseInt(sel.value);
+        groups[targetIdx].d.push({i: uid(), t: t, u: u, m: m});
+        if (targetIdx !== activeGroup) {
+          activeGroup = targetIdx;
+        }
+        toast('Hozzáadva: ' + groups[targetIdx].n);
       }
       save(); renderDials(); renderGroups(); closeModal();
     };
@@ -718,8 +731,18 @@ function openSettings() {
     html += '<div style="font-size:12px;font-weight:500;margin-bottom:12px">Export / Import</div>';
     html += '<div style="display:flex;gap:8px;margin-bottom:16px"><button class="pbtn" id="exportBtn" style="font-size:12px">&#128190; Exportálás (JSON)</button><button class="sbtn" id="importBtn" style="font-size:12px">&#128194; Importálás</button></div>';
     html += '<input type="file" id="importFile" accept=".json" style="display:none">';
-    html += '<div style="font-size:11px;color:#606080;margin-top:8px">Az exportált fájl tartalmazza az összes csoportot, tárcsát, beállítást és jegyzetet.</div>';
-    html += '<div style="border-top:1px solid rgba(124,131,255,.1);margin-top:16px;padding-top:12px">';
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:16px">Az exportált fájl tartalmazza az összes csoportot, tárcsát, beállítást és jegyzetet.</div>';
+    // Bookmarklet
+    var bmUrl = window.location.origin + window.location.pathname;
+    var bmCode = "javascript:void(window.open('" + bmUrl + "?add='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title)))";
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:12px;margin-bottom:16px">';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">&#128278; Oldal hozzáadása bookmarklet</div>';
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:8px">Húzd ezt a gombot a könyvjelzősávra. Bármilyen oldalon rákattintva hozzáadhatod a Speed Dial-hoz:</div>';
+    html += '<a href="' + esc(bmCode) + '" onclick="event.preventDefault();toast(\'Húzd a könyvjelzősávra!\')" style="display:inline-block;padding:8px 16px;background:#7c83ff;color:#fff;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;cursor:grab">&#10133; Speed Dial</a>';
+    html += '<div style="font-size:10px;color:#606080;margin-top:6px">Tipp: ha nem látod a könyvjelzősávot, nyomj Ctrl+Shift+B</div>';
+    html += '</div>';
+    // Reset
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:12px">';
     html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px;color:#ff5c6c">Veszélyes zóna</div>';
     html += '<button class="sbtn" id="resetBtn" style="font-size:11px;color:#ff5c6c;border-color:rgba(255,92,108,.3)">&#128465; Összes adat törlése</button>';
     html += '</div>';
@@ -885,6 +908,27 @@ function waitForGapi() {
   }
 }
 waitForGapi();
+
+// === URL PARAMETER: ?add=URL&title=TITLE ===
+function checkAddParam() {
+  var params = new URLSearchParams(window.location.search);
+  var addUrl = params.get('add');
+  if (addUrl) {
+    var addTitle = params.get('title') || '';
+    // Wait until logged in and data loaded
+    var checkReady = setInterval(function() {
+      if (groups && groups.length > 0 && document.getElementById('appScreen').style.display === 'block') {
+        clearInterval(checkReady);
+        openDialModal(null, addUrl, addTitle);
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }, 500);
+    // Timeout after 15s
+    setTimeout(function() { clearInterval(checkReady); }, 15000);
+  }
+}
+checkAddParam();
 </script>
 </body>
 </html>
