@@ -526,6 +526,40 @@ function renderDials() {
     h += '<button class="refresh-btn" data-dial-idx="' + idx + '" title="Kép frissítése">&#8635;</button>';
     h += '<div class="info"><img src="' + esc(favicon(d.u)) + '" onerror="this.style.display=\'none\'"><span>' + esc(d.t || domain || '?') + '</span></div>';
     el.innerHTML = h;
+    // Drag & drop
+    el.draggable = true;
+    el.dataset.idx = idx;
+    el.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', idx);
+      el.style.opacity = '0.4';
+    });
+    el.addEventListener('dragend', function() {
+      el.style.opacity = '1';
+    });
+    el.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      el.style.borderColor = '#7c83ff';
+      el.style.boxShadow = '0 0 12px rgba(124,131,255,.4)';
+    });
+    el.addEventListener('dragleave', function() {
+      el.style.borderColor = '';
+      el.style.boxShadow = '';
+    });
+    el.addEventListener('drop', function(e) {
+      e.preventDefault();
+      el.style.borderColor = '';
+      el.style.boxShadow = '';
+      var fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      var toIdx = idx;
+      if (fromIdx !== toIdx && !isNaN(fromIdx)) {
+        var arr = curGroup().d;
+        var item = arr.splice(fromIdx, 1)[0];
+        arr.splice(toIdx, 0, item);
+        save();
+        renderDials();
+        toast('Átrendezve');
+      }
+    });
     el.onclick = function(e) {
       if (e.target.closest('.refresh-btn')) return;
       window.open(d.u, settings.nt ? '_blank' : '_self');
@@ -760,9 +794,10 @@ function openSettings() {
   }
   if (sTab === 'data') {
     html += '<div style="font-size:12px;font-weight:500;margin-bottom:12px">Export / Import</div>';
-    html += '<div style="display:flex;gap:8px;margin-bottom:16px"><button class="pbtn" id="exportBtn" style="font-size:12px">&#128190; Exportálás (JSON)</button><button class="sbtn" id="importBtn" style="font-size:12px">&#128194; Importálás</button></div>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button class="pbtn" id="exportBtn" style="font-size:12px">&#128190; Export JSON</button><button class="sbtn" id="importBtn" style="font-size:12px">&#128194; Import JSON</button><button class="pbtn" id="exportHtmlBtn" style="font-size:12px;background:#2ecc71">&#127760; Export HTML</button><button class="sbtn" id="importHtmlBtn" style="font-size:12px">&#127760; Import HTML</button></div>';
     html += '<input type="file" id="importFile" accept=".json" style="display:none">';
-    html += '<div style="font-size:11px;color:#606080;margin-bottom:16px">Az exportált fájl tartalmazza az összes csoportot, tárcsát, beállítást és jegyzetet.</div>';
+    html += '<input type="file" id="importHtmlFile" accept=".html,.htm" style="display:none">';
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:16px"><b>JSON</b>: csak az adatok (csoportok, tárcsák, beállítások, jegyzetek).<br><b>HTML</b>: a teljes alkalmazás az adatokkal együtt — offline is megnyitható!</div>';
     // Bookmarklet
     var bmUrl = window.location.origin + window.location.pathname;
     var bmCode = "javascript:void(window.open('" + bmUrl + "?add='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title)))";
@@ -841,6 +876,73 @@ function openSettings() {
               closeModal();
             }
           } catch(err) { toast('Hibás JSON fájl!'); }
+        };
+        reader.readAsText(file);
+      };
+    }
+    // HTML Export
+    var expHtmlBtn = document.getElementById('exportHtmlBtn');
+    if (expHtmlBtn) {
+      expHtmlBtn.onclick = function() {
+        // Get the current page HTML and inject data
+        var dataObj = {groups: groups, settings: settings, notes: notes, activeGroup: activeGroup};
+        var dataStr = JSON.stringify(dataObj);
+        // Get full page source
+        var pageHtml = document.documentElement.outerHTML;
+        // Inject embedded data as a script before closing </script>
+        var marker = '// === INIT ===';
+        var embedScript = '// === EMBEDDED DATA ===\nvar _embedded = ' + dataStr + ';\nif(_embedded){groups=_embedded.groups||groups;settings=Object.assign(settings,_embedded.settings||{});notes=_embedded.notes||notes;if(typeof _embedded.activeGroup==="number")activeGroup=_embedded.activeGroup;}\n';
+        pageHtml = pageHtml.replace(marker, embedScript + marker);
+        var blob = new Blob(['<!DOCTYPE html>\n<html' + pageHtml.slice(pageHtml.indexOf('<html') + 5)], {type: 'text/html'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'speed-dial-' + new Date().toISOString().slice(0,10) + '.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('HTML exportálva');
+      };
+    }
+    // HTML Import
+    var impHtmlBtn = document.getElementById('importHtmlBtn');
+    var impHtmlFile = document.getElementById('importHtmlFile');
+    if (impHtmlBtn && impHtmlFile) {
+      impHtmlBtn.onclick = function() { impHtmlFile.click(); };
+      impHtmlFile.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            var htmlStr = ev.target.result;
+            // Try to extract _embedded data
+            var match = htmlStr.match(/var _embedded\s*=\s*(\{[\s\S]*?\});/);
+            if (!match) {
+              // Try to find data in other formats
+              match = htmlStr.match(/"groups"\s*:\s*\[/);
+              if (!match) { toast('Nem találhatók adatok a HTML-ben!'); return; }
+              // Try to extract full JSON object
+              var jsonStart = htmlStr.lastIndexOf('{', match.index);
+              var depth = 0; var jsonEnd = jsonStart;
+              for (var ci = jsonStart; ci < htmlStr.length && ci < jsonStart + 500000; ci++) {
+                if (htmlStr[ci] === '{') depth++;
+                if (htmlStr[ci] === '}') { depth--; if (depth === 0) { jsonEnd = ci + 1; break; } }
+              }
+              match = [null, htmlStr.slice(jsonStart, jsonEnd)];
+            }
+            var data = JSON.parse(match[1]);
+            if (!data.groups || !Array.isArray(data.groups)) { toast('Hibás HTML!'); return; }
+            if (confirm('Importálás HTML-ből? Ez felülírja a jelenlegi adatokat!')) {
+              groups = data.groups;
+              if (data.settings) settings = Object.assign(settings, data.settings);
+              if (data.notes !== undefined) notes = data.notes;
+              if (typeof data.activeGroup === 'number') activeGroup = data.activeGroup;
+              if (activeGroup >= groups.length) activeGroup = 0;
+              page = 0;
+              save(); applySettings(); renderGroups(); renderDials();
+              toast('HTML importálva: ' + groups.length + ' csoport');
+              closeModal();
+            }
+          } catch(err) { toast('Hiba a HTML feldolgozásakor!'); console.error(err); }
         };
         reader.readAsText(file);
       };
