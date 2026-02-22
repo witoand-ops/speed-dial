@@ -516,27 +516,59 @@ function renderGroups() {
   if (cats.length > 0) {
     catBar.style.display = 'flex';
     catBar.innerHTML = '';
-    // "Összes" button
+
+    // Helper to make a cat button a drop target
+    function makeCatDropTarget(el, catValue) {
+      el.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        el.style.background = 'rgba(124,131,255,.3)';
+        el.style.transform = 'scale(1.08)';
+      });
+      el.addEventListener('dragleave', function() {
+        el.style.background = '';
+        el.style.transform = '';
+      });
+      el.addEventListener('drop', function(e) {
+        e.preventDefault();
+        el.style.background = '';
+        el.style.transform = '';
+        var data = e.dataTransfer.getData('text/plain');
+        if (data.indexOf('group:') === 0) {
+          var idx = parseInt(data.slice(6));
+          groups[idx].cat = catValue;
+          save(); renderGroups(); renderDials();
+          toast(groups[idx].n + ' → ' + (catValue || 'nincs kategória'));
+        }
+      });
+    }
+
+    // "Összes" button (filter only, not a drop target)
     var allBtn = document.createElement('button');
     allBtn.className = 'cat-btn' + (activeCat === '__all__' ? ' on' : '');
     allBtn.textContent = 'Összes (' + groups.length + ')';
     allBtn.onclick = function() { activeCat = '__all__'; renderGroups(); };
     catBar.appendChild(allBtn);
-    // "Nincs kategória" button
+
+    // "Nincs kategória" button - also drop target to remove category
     var uncatCount = groups.filter(function(g) { return !g.cat; }).length;
-    if (uncatCount > 0) {
+    if (uncatCount > 0 || true) { // always show so user can drop to uncategorize
       var uncatBtn = document.createElement('button');
       uncatBtn.className = 'cat-btn' + (activeCat === '__none__' ? ' on' : '');
-      uncatBtn.textContent = 'Kategorizálatlan (' + uncatCount + ')';
+      uncatBtn.textContent = 'Nincs (' + uncatCount + ')';
+      uncatBtn.style.borderBottom = '2px dashed rgba(255,92,108,.3)';
       uncatBtn.onclick = function() { activeCat = '__none__'; renderGroups(); };
+      makeCatDropTarget(uncatBtn, '');
       catBar.appendChild(uncatBtn);
     }
+
     cats.forEach(function(cat) {
       var count = groups.filter(function(g) { return g.cat === cat; }).length;
       var btn = document.createElement('button');
       btn.className = 'cat-btn' + (activeCat === cat ? ' on' : '');
       btn.textContent = cat + ' (' + count + ')';
+      btn.style.borderBottom = '2px dashed rgba(124,131,255,.2)';
       btn.onclick = function() { activeCat = cat; renderGroups(); };
+      makeCatDropTarget(btn, cat);
       catBar.appendChild(btn);
     });
   } else {
