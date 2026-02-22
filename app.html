@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Speed Dial Groups</title>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,sans-serif;background:#0f0f1a;color:#e8e8f0;min-height:100vh}
+[data-t=l] body{background:#f0f0f8;color:#1a1a2e}
+[data-t=l] header{background:rgba(240,240,248,.9)}
+[data-t=l] .tabs{border-color:rgba(100,100,180,.15)}
+[data-t=l] .tab{color:#555570}
+[data-t=l] .tab.on{color:#fff}
+[data-t=l] .dial{background:#fff;border-color:rgba(100,100,180,.15)}
+[data-t=l] .dial.add{background:transparent}
+[data-t=l] #themebtn{background:#fff;color:#555570;border-color:rgba(100,100,180,.15)}
+[data-t=l] .clock .time,[data-t=l] .clock .date{color:#333}
+[data-t=l] .overlay{background:rgba(0,0,0,.4)}
+[data-t=l] .mpanel{background:#fff;border-color:rgba(100,100,180,.15)}
+[data-t=l] .mpanel .mhead{border-color:rgba(100,100,180,.15)}
+[data-t=l] .mpanel .mfoot{border-color:rgba(100,100,180,.15)}
+[data-t=l] .mpanel input[type=text],[data-t=l] .mpanel input[type=url],[data-t=l] .mpanel input[type=number],[data-t=l] .mpanel textarea,[data-t=l] .mpanel select{background:#f0f0f8;border-color:rgba(100,100,180,.15);color:#1a1a2e}
+[data-t=l] .mpanel label{color:#555570}
+[data-t=l] .closebtn{color:#555570}
+[data-t=l] .sbtn{color:#555570;border-color:rgba(100,100,180,.15)}
+[data-t=l] .stab{color:#555570}
+[data-t=l] .srow{border-color:rgba(100,100,180,.08)}
+[data-t=l] .rng{border-color:rgba(100,100,180,.08)}
+[data-t=l] .toast{background:#fff;color:#1a1a2e;border-color:rgba(100,100,180,.15)}
+[data-t=l] .hb{color:#555570}
+[data-t=l] .hb:hover{color:#5c63e0;background:rgba(92,99,224,.1)}
+[data-t=l] .addg{border-color:rgba(100,100,180,.3);color:#999}
+[data-t=l] .tsi{border-color:rgba(100,100,180,.12)}
+[data-t=l] .mvi{background:#f8f8fc;border-color:rgba(100,100,180,.12)}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:rgba(15,15,26,.9);border-bottom:1px solid rgba(124,131,255,.15);position:sticky;top:0;z-index:100}
+.logo{font-weight:700;font-size:15px;color:#7c83ff}
+.hbtns{display:flex;gap:4px}
+.hb{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;border-radius:10px;cursor:pointer;font-size:18px;color:#9090b0}
+.hb:hover{background:rgba(124,131,255,.15);border-color:rgba(124,131,255,.25);color:#7c83ff}
+.tabs{display:flex;align-items:center;gap:4px;padding:8px 20px;border-bottom:1px solid rgba(124,131,255,.15);overflow-x:auto}
+.tab{padding:6px 16px;border:none;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;color:#9090b0;background:none;white-space:nowrap}
+.tab:hover{background:rgba(124,131,255,.1)}
+.tab.on{color:#fff}
+.addg{width:28px;height:28px;border:1px dashed rgba(124,131,255,.3);border-radius:8px;background:none;color:#606080;font-size:18px;cursor:pointer;margin-left:auto;flex-shrink:0}
+.addg:hover{color:#7c83ff;border-color:#7c83ff}
+#grid{display:grid;gap:16px;padding:24px;justify-content:center}
+.dial{border-radius:12px;cursor:pointer;position:relative;overflow:hidden;border:1px solid rgba(124,131,255,.15);background:#1c1c35;transition:transform .2s,box-shadow .2s}
+.dial:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.dial .thumb{position:absolute;inset:0}
+.dial .thumb img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.dial .fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase}
+.dial .grad{position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.dial .info{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;gap:5px;padding:7px 10px;z-index:2}
+.dial .info img{width:14px;height:14px;border-radius:2px}
+.dial .info span{font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.dial.add{border-style:dashed;border-color:#606080;opacity:.5;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent}
+.dial.add:hover{opacity:1;border-color:#7c83ff}
+#pagi{display:flex;justify-content:center;gap:6px;padding:0 24px 20px;align-items:center}
+#pagi button{padding:4px 10px;border-radius:6px;border:1px solid rgba(124,131,255,.15);background:none;color:#9090b0;cursor:pointer;font-size:12px}
+#pagi button.on{background:#7c83ff;color:#fff}
+#pagi button:disabled{opacity:.3}
+.clock{position:fixed;bottom:20px;right:20px;text-align:right;pointer-events:none;z-index:50;font-family:monospace}
+.clock .time{font-size:18px;opacity:.6}
+.clock .date{font-size:11px;opacity:.4}
+#themebtn{position:fixed;bottom:20px;left:20px;z-index:50;padding:6px 12px;border-radius:16px;border:1px solid rgba(124,131,255,.15);background:#1c1c35;color:#9090b0;font-size:11px;cursor:pointer}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.mpanel{background:#161628;border:1px solid rgba(124,131,255,.15);border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.5);width:440px;max-width:95vw;max-height:85vh;overflow-y:auto}
+.mpanel.wide{width:560px}
+.mpanel .mhead{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(124,131,255,.15)}
+.mpanel .mhead h3{font-size:14px;font-weight:600}
+.closebtn{background:none;border:none;color:#9090b0;font-size:20px;cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.closebtn:hover{background:rgba(124,131,255,.15);color:#7c83ff}
+.mpanel .mbody{padding:14px 18px}
+.mpanel .mfoot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid rgba(124,131,255,.15)}
+.mpanel label{display:block;font-size:12px;color:#9090b0;margin-bottom:10px}
+.mpanel input[type=text],.mpanel input[type=url],.mpanel input[type=number],.mpanel textarea,.mpanel select{display:block;width:100%;margin-top:4px;padding:8px 10px;background:#1a1a30;border:1px solid rgba(124,131,255,.15);border-radius:8px;color:#e8e8f0;font-family:inherit;font-size:13px;outline:none}
+.mpanel input:focus,.mpanel textarea:focus{border-color:#7c83ff}
+.mpanel textarea{min-height:60px;resize:vertical}
+.pbtn{padding:7px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border:none;background:#7c83ff;color:#fff}
+.sbtn{padding:7px 16px;border-radius:8px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(124,131,255,.15);background:none;color:#9090b0}
+.stabs{display:flex;border-bottom:1px solid rgba(124,131,255,.15);margin-bottom:12px}
+.stab{padding:8px 12px;background:none;border:none;border-bottom:2px solid transparent;font-family:inherit;font-size:12px;cursor:pointer;color:#9090b0}
+.stab.on{color:#7c83ff;border-bottom-color:#7c83ff}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(124,131,255,.06)}
+.rng{padding:10px 0;border-bottom:1px solid rgba(124,131,255,.06)}
+.rng .rh{display:flex;justify-content:space-between;margin-bottom:4px}
+.rng .rv{font-family:monospace;font-weight:700;color:#7c83ff;font-size:13px}
+.rng input[type=range]{width:100%;accent-color:#7c83ff}
+.tsi{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;border:1px solid rgba(124,131,255,.08)}
+.tsi:hover{border-color:rgba(124,131,255,.3)}
+.tsi img{width:16px;height:16px;border-radius:2px}
+.tsi .nm{font-size:12px;flex:1}
+.tsi .ad{color:#7c83ff;font-size:15px;opacity:0;cursor:pointer}
+.tsi:hover .ad{opacity:1}
+.mvi{padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:4px;border:1px solid rgba(124,131,255,.1);background:#1c1c35}
+.mvi:hover{border-color:#7c83ff;color:#7c83ff}
+.tmrd{font-family:monospace;font-size:40px;color:#7c83ff;text-align:center;margin:14px 0;letter-spacing:2px}
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#161628;border:1px solid rgba(124,131,255,.15);border-radius:8px;padding:8px 18px;font-size:12px;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.v{opacity:1}
+
+
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px}
+#loginScreen h1{font-size:28px;color:#7c83ff;font-weight:700}
+#loginScreen p{color:#9090b0;font-size:13px;max-width:380px;text-align:center;line-height:1.6}
+#loginScreen .note{color:#606080;font-size:11px;margin-top:12px;text-align:center;line-height:1.7;max-width:420px}
+#loginScreen .note a{color:#7c83ff}
+#authBtn{padding:12px 28px;border-radius:24px;border:none;background:#7c83ff;color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+#authBtn:hover{background:#9198ff}
+#authLoading{color:#606080;font-size:12px}
+#appScreen{display:none}
+.user-bar{display:flex;align-items:center;gap:8px;margin-right:8px}
+.user-bar img{width:28px;height:28px;border-radius:50%;border:2px solid rgba(124,131,255,.3)}
+.user-bar span{font-size:12px;color:#9090b0;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lout{background:none;border:1px solid rgba(255,92,108,.3);border-radius:6px;color:#ff5c6c;font-size:11px;padding:3px 8px;cursor:pointer;font-family:inherit}
+.lout:hover{background:rgba(255,92,108,.1)}
+.sync{font-size:10px;color:#606080;position:fixed;bottom:22px;right:140px;pointer-events:none;z-index:50}
+
+
+.dial .refresh-btn{position:absolute;top:5px;left:5px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.6);border:none;color:#fff;font-size:12px;cursor:pointer;z-index:3;opacity:0;transition:opacity .2s;display:flex;align-items:center;justify-content:center}
+.dial:hover .refresh-btn{opacity:1}
+.dial .refresh-btn:hover{background:rgba(124,131,255,.8)}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <h1>&#8862; Speed Dial Groups</h1>
+  <p>Jelentkezz be Google fiókoddal.<br>Az adataid a saját Google Drive-odban tárolódnak, biztonságban.</p>
+  <button id="authBtn">&#128274; Bejelentkezés Google-lel</button>
+  <div id="authLoading" style="font-size:11px;color:#606080">Google API betöltése...</div>
+  <div class="note">
+    Első használathoz szükséges egy Google Cloud OAuth Client ID.<br>
+    Részletes útmutató: <a href="https://github.com/user/speed-dial-groups#readme" target="_blank">README</a>
+  </div>
+</div>
+<div id="appScreen">
+
+
+<header>
+  <div class="logo">&#8862; Speed Dial Groups</div>
+  <div style="display:flex;align-items:center;gap:6px">
+    <div class="user-bar" id="userBar"></div>
+    <div class="hbtns">
+      <button class="hb" id="btnTop" title="Top oldalak">&#128202;</button>
+      <button class="hb" id="btnTimer" title="Időzítő">&#9201;</button>
+      <button class="hb" id="btnNotes" title="Jegyzetek">&#128221;</button>
+      <button class="hb" id="btnSettings" title="Beállítások">&#9881;</button>
+    </div>
+  </div>
+</header>
+
+<div class="tabs" id="tabsBar">
+  <div id="groupTabs" style="display:flex;gap:4px;flex:1;overflow-x:auto"></div>
+  <button class="addg" id="addGroupBtn">+</button>
+</div>
+
+<div id="grid"></div>
+<div id="pagi"></div>
+
+<div class="clock" id="clockWidget">
+  <div class="time" id="clockTime"></div>
+  <div class="date" id="clockDate"></div>
+</div>
+<button id="themebtn">&#127769; Téma</button>
+
+<div class="overlay" id="overlay"></div>
+<div class="sync" id="syncInd"></div>
+<div class="toast" id="toast"></div>
+
+
+</div>
+<script>
+// Google Drive integration
+
+// =======================================
+// GOOGLE DRIVE AUTH + STORAGE
+// =======================================
+
+// >>> IDE ÍRD BE a saját Google Cloud OAuth Client ID-dat <<<
+var CLIENT_ID = '581358319483-002caa9u9sjobdbbe8al8vj513nc7tjf.apps.googleusercontent.com';
+
+var SCOPES = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.profile';
+var DATA_FILE = 'speed-dial-data.json';
+var tokenClient = null;
+var accessToken = null;
+var driveFileId = null;
+
+// Called when gapi.js loads
+function gapiLoaded() {
+  gapi.load('client', function() {
+    gapi.client.init({}).then(function() {
+      return gapi.client.load('drive', 'v3');
+    }).then(function() {
+      initGIS();
+    });
+  });
+}
+
+// Called after gapi is ready
+function initGIS() {
+  if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+    setTimeout(initGIS, 300);
+    return;
+  }
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: onToken
+  });
+
+  // Check saved token
+  var saved = localStorage.getItem('sd_gtoken');
+  if (saved) {
+    accessToken = saved;
+    gapi.client.setToken({access_token: accessToken});
+    // Verify token is still valid
+    gapi.client.request({path: 'https://www.googleapis.com/oauth2/v2/userinfo'})
+    .then(function(r) { enterApp(r.result); })
+    .catch(function() {
+      // Token expired - try silent refresh
+      localStorage.removeItem('sd_gtoken');
+      accessToken = null;
+      if (tokenClient) {
+        try { tokenClient.requestAccessToken({prompt: ''}); } catch(e) { showLogin(); }
+      } else {
+        showLogin();
+      }
+    });
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('authLoading').style.display = 'none';
+  document.getElementById('authBtn').style.display = 'inline-block';
+}
+
+// Fallback: if Google APIs don't load within 5 seconds, show button anyway with error
+var _loginTimeout = setTimeout(function() {
+  var btn = document.getElementById('authBtn');
+  var loading = document.getElementById('authLoading');
+  if (btn && btn.style.display === 'none') {
+    loading.textContent = 'Google API betöltési hiba. Próbáld kikapcsolni az adblocker-t, majd frissítsd az oldalt.';
+    loading.style.color = '#ff5c6c';
+    btn.style.display = 'inline-block';
+  }
+}, 5000);
+
+function onToken(resp) {
+  if (resp.error) { console.error('Token error:', resp); return; }
+  accessToken = resp.access_token;
+  localStorage.setItem('sd_gtoken', accessToken);
+  gapi.client.setToken({access_token: accessToken});
+  gapi.client.request({path: 'https://www.googleapis.com/oauth2/v2/userinfo'})
+  .then(function(r) { enterApp(r.result); })
+  .catch(function(e) { console.error(e); alert('Hiba a bejelentkezéskor'); });
+}
+
+function enterApp(user) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display = 'block';
+
+  var bar = document.getElementById('userBar');
+  bar.innerHTML = '';
+  if (user.picture) {
+    var img = document.createElement('img');
+    img.src = user.picture;
+    img.referrerPolicy = 'no-referrer';
+    bar.appendChild(img);
+  }
+  var sp = document.createElement('span');
+  sp.textContent = user.name || user.email || '';
+  bar.appendChild(sp);
+  var lb = document.createElement('button');
+  lb.className = 'lout';
+  lb.textContent = 'Kilépés';
+  lb.addEventListener('click', function() {
+    try { google.accounts.oauth2.revoke(accessToken); } catch(e) {}
+    localStorage.removeItem('sd_gtoken');
+    location.reload();
+  });
+  bar.appendChild(lb);
+
+  // Now load data from Drive
+  driveLoad();
+}
+
+function syncMsg(m) {
+  var el = document.getElementById('syncInd');
+  if (el) el.textContent = m;
+}
+
+// Find the data file in appDataFolder
+function driveFindFile() {
+  return gapi.client.drive.files.list({
+    spaces: 'appDataFolder',
+    q: "name = '" + DATA_FILE + "'",
+    fields: 'files(id)',
+    pageSize: 1
+  }).then(function(r) {
+    var f = r.result.files;
+    if (f && f.length > 0) { driveFileId = f[0].id; return true; }
+    return false;
+  });
+}
+
+// Load data from Google Drive
+function driveLoad() {
+  syncMsg('Betöltés...');
+  driveFindFile().then(function(found) {
+    if (!found) {
+      // First time - use defaults, then save
+      syncMsg('Új profil');
+      return driveSaveNow();
+    }
+    return gapi.client.drive.files.get({fileId: driveFileId, alt: 'media'}).then(function(r) {
+      var d = r.result;
+      if (d && d.groups && d.groups.length > 0) groups = d.groups;
+      if (d && d.settings) settings = Object.assign(settings, d.settings);
+      if (d && d.notes !== undefined) notes = d.notes;
+      if (d && typeof d.activeGroup === 'number') activeGroup = d.activeGroup;
+      if (activeGroup >= groups.length) activeGroup = 0;
+      page = 0;
+      applySettings();
+      renderGroups();
+      renderDials();
+      syncMsg('✓ Betöltve');
+      setTimeout(function() { syncMsg(''); }, 2500);
+    });
+  }).catch(function(e) {
+    console.error('Drive load error:', e);
+    syncMsg('✗ Betöltési hiba');
+    applySettings();
+    renderGroups();
+    renderDials();
+  });
+}
+
+// Save data to Google Drive (debounced)
+var _dsTimer = null;
+function driveSave() {
+  clearTimeout(_dsTimer);
+  _dsTimer = setTimeout(driveSaveNow, 800);
+}
+
+function driveSaveNow() {
+  if (!accessToken) return Promise.resolve();
+  syncMsg('Mentés...');
+  var payload = JSON.stringify({
+    groups: groups,
+    settings: settings,
+    notes: notes,
+    activeGroup: activeGroup
+  });
+
+  if (driveFileId) {
+    // Update
+    return fetch('https://www.googleapis.com/upload/drive/v3/files/' + driveFileId + '?uploadType=media', {
+      method: 'PATCH',
+      headers: {'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json'},
+      body: payload
+    }).then(function(r) {
+      syncMsg(r.ok ? '✓ Mentve' : '✗ Hiba');
+      setTimeout(function() { syncMsg(''); }, 2500);
+    }).catch(function() { syncMsg('✗ Mentési hiba'); });
+  } else {
+    // Create
+    var meta = {name: DATA_FILE, parents: ['appDataFolder'], mimeType: 'application/json'};
+    var form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(meta)], {type: 'application/json'}));
+    form.append('file', new Blob([payload], {type: 'application/json'}));
+    return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+      method: 'POST',
+      headers: {'Authorization': 'Bearer ' + accessToken},
+      body: form
+    }).then(function(r) { return r.json(); })
+    .then(function(r) {
+      if (r.id) driveFileId = r.id;
+      syncMsg('✓ Mentve');
+      setTimeout(function() { syncMsg(''); }, 2500);
+    }).catch(function() { syncMsg('✗ Mentési hiba'); });
+  }
+}
+
+
+// Auth button handler
+document.getElementById('authBtn').addEventListener('click', function() {
+  if (tokenClient) {
+    tokenClient.requestAccessToken();
+  } else {
+    document.getElementById('authLoading').textContent = 'A Google API még nem töltődött be. Próbáld kikapcsolni az adblocker-t, majd frissítsd az oldalt (Ctrl+Shift+R).';
+    document.getElementById('authLoading').style.color = '#ff5c6c';
+  }
+});
+
+// === SPEED DIAL APP ===
+// === DATA ===
+var COLORS = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59b6','#e84393','#6c5ce7','#00b894'];
+var SITES = [['Facebook','https://www.facebook.com'],['YouTube','https://www.youtube.com'],['Maps','https://maps.google.com'],['X/Twitter','https://x.com'],['Instagram','https://www.instagram.com'],['LinkedIn','https://www.linkedin.com'],['Amazon','https://www.amazon.com'],['Wikipedia','https://hu.wikipedia.org'],['Netflix','https://www.netflix.com'],['Reddit','https://www.reddit.com']];
+var ENGINES = {google:'https://www.google.com/search?q=',bing:'https://www.bing.com/search?q=',ddg:'https://duckduckgo.com/?q='};
+
+var groups, settings, notes, activeGroup, page, fails;
+
+function defaults() {
+  groups = [
+    {n:'Kezdőlap',c:'#7c83ff',cols:5,dw:220,dh:170,pp:15,d:[
+      {i:'1',t:'Google',u:'https://www.google.com',m:''},
+      {i:'2',t:'YouTube',u:'https://www.youtube.com',m:''},
+      {i:'3',t:'Gmail',u:'https://mail.google.com',m:''},
+      {i:'4',t:'Wikipedia',u:'https://hu.wikipedia.org',m:''},
+      {i:'5',t:'Reddit',u:'https://www.reddit.com',m:''},
+      {i:'6',t:'GitHub',u:'https://github.com',m:''},
+      {i:'7',t:'Twitter/X',u:'https://x.com',m:''},
+      {i:'8',t:'StackOverflow',u:'https://stackoverflow.com',m:''},
+      {i:'9',t:'ChatGPT',u:'https://chat.openai.com',m:''},
+      {i:'10',t:'Amazon',u:'https://www.amazon.com',m:''}
+    ]},
+    {n:'Munka',c:'#2ecc71',cols:5,dw:220,dh:170,pp:15,d:[
+      {i:'11',t:'Drive',u:'https://drive.google.com',m:''},
+      {i:'12',t:'Slack',u:'https://slack.com',m:''},
+      {i:'13',t:'Notion',u:'https://www.notion.so',m:''}
+    ]},
+    {n:'Szórakozás',c:'#e74c3c',cols:5,dw:220,dh:170,pp:15,d:[
+      {i:'14',t:'Netflix',u:'https://www.netflix.com',m:''},
+      {i:'15',t:'Spotify',u:'https://www.spotify.com',m:''},
+      {i:'16',t:'Twitch',u:'https://www.twitch.tv',m:''}
+    ]}
+  ];
+  settings = {eng:'google',clk:true,tabs:true,nt:true};
+  notes = '';
+  activeGroup = 0;
+  page = 0;
+  fails = {};
+}
+
+// === HELPERS ===
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function getDom(u) { try { return new URL(u).hostname; } catch(e) { return ''; } }
+function getColor(s) { var h=0; for(var i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h); return COLORS[Math.abs(h)%COLORS.length]; }
+function favicon(u) { return 'https://www.google.com/s2/favicons?domain='+getDom(u)+'&sz=32'; }
+function screenshot(u) { return 'https://image.thum.io/get/width/400/'+u; }
+function curGroup() { return groups[activeGroup]; }
+
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('v');
+  clearTimeout(t._to);
+  t._to = setTimeout(function() { t.classList.remove('v'); }, 2000);
+}
+
+function save() { driveSave(); }
+
+function load() { defaults(); }
+
+// === MODAL ===
+function showModal(html, wide) {
+  var ov = document.getElementById('overlay');
+  ov.innerHTML = '<div class="mpanel' + (wide ? ' wide' : '') + '">' + html + '</div>';
+  ov.classList.add('open');
+  ov.onclick = function(e) { if (e.target === ov) closeModal(); };
+  var panel = ov.querySelector('.mpanel');
+  if (panel) panel.onclick = function(e) { e.stopPropagation(); };
+}
+
+function closeModal() {
+  var ov = document.getElementById('overlay');
+  ov.classList.remove('open');
+  ov.innerHTML = '';
+}
+
+// === RENDER ===
+function renderGroups() {
+  var c = document.getElementById('groupTabs');
+  c.innerHTML = '';
+  groups.forEach(function(g, i) {
+    var b = document.createElement('button');
+    b.className = 'tab' + (i === activeGroup ? ' on' : '');
+    b.innerHTML = esc(g.n) + ' <span style="font-size:10px;opacity:.6">(' + g.d.length + ')</span>';
+    if (i === activeGroup) { b.style.background = g.c; b.style.borderColor = g.c; }
+    b.onclick = function() { activeGroup = i; page = 0; save(); renderGroups(); renderDials(); };
+    c.appendChild(b);
+  });
+}
+
+function renderDials() {
+  var grid = document.getElementById('grid');
+  var g = curGroup();
+  if (!g) return;
+  grid.innerHTML = '';
+  // Per-group settings with fallback
+  var pp = g.pp || 15;
+  var total = Math.max(1, Math.ceil(g.d.length / pp));
+  if (page >= total) page = total - 1;
+  var dw = g.dw || 220, dh = g.dh || 170;
+  grid.style.gridTemplateColumns = 'repeat(' + (g.cols||5) + ',' + dw + 'px)';
+
+  var start = page * pp;
+  var slice = g.d.slice(start, start + pp);
+
+  slice.forEach(function(d, i) {
+    var idx = start + i;
+    var el = document.createElement('div');
+    el.className = 'dial';
+    el.style.width = dw + 'px';
+    el.style.height = dh + 'px';
+    var domain = getDom(d.u);
+    var letter = (d.t || domain || '?')[0].toUpperCase();
+    var col = getColor(domain || d.t || '?');
+    var imgSrc = d.img || screenshot(d.u);
+    var h = '<div class="thumb">';
+    if (!fails[d.i]) {
+      h += '<img src="' + esc(imgSrc) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+      h += '<div class="fallback" style="display:none;background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, dw * 0.18) + 'px">' + letter + '</div>';
+    } else {
+      h += '<div class="fallback" style="background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, dw * 0.18) + 'px">' + letter + '</div>';
+    }
+    h += '</div><div class="grad"></div>';
+    h += '<button class="refresh-btn" data-dial-idx="' + idx + '" title="Kép frissítése">&#8635;</button>';
+    h += '<div class="info"><img src="' + esc(favicon(d.u)) + '" onerror="this.style.display=\'none\'"><span>' + esc(d.t || domain || '?') + '</span></div>';
+    el.innerHTML = h;
+    // Drag & drop
+    el.draggable = true;
+    el.dataset.idx = idx;
+    el.addEventListener('dragstart', function(e) {
+      e.dataTransfer.setData('text/plain', idx);
+      el.style.opacity = '0.4';
+    });
+    el.addEventListener('dragend', function() {
+      el.style.opacity = '1';
+    });
+    el.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      el.style.borderColor = '#7c83ff';
+      el.style.boxShadow = '0 0 12px rgba(124,131,255,.4)';
+    });
+    el.addEventListener('dragleave', function() {
+      el.style.borderColor = '';
+      el.style.boxShadow = '';
+    });
+    el.addEventListener('drop', function(e) {
+      e.preventDefault();
+      el.style.borderColor = '';
+      el.style.boxShadow = '';
+      var fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      var toIdx = idx;
+      if (fromIdx !== toIdx && !isNaN(fromIdx)) {
+        var arr = curGroup().d;
+        var item = arr.splice(fromIdx, 1)[0];
+        arr.splice(toIdx, 0, item);
+        save();
+        renderDials();
+        toast('Átrendezve');
+      }
+    });
+    el.onclick = function(e) {
+      if (e.target.closest('.refresh-btn')) return;
+      window.open(d.u, settings.nt ? '_blank' : '_self');
+    };
+    var refreshBtn = el.querySelector('.refresh-btn');
+    if (refreshBtn) {
+      refreshBtn.onclick = function(e) {
+        e.stopPropagation();
+        // Force refresh screenshot with cache-bust
+        var newUrl = screenshot(d.u) + '?t=' + Date.now();
+        d.img = newUrl;
+        delete fails[d.i];
+        save();
+        renderDials();
+        toast('Kép frissítése...');
+      };
+    }
+    grid.appendChild(el);
+  });
+
+  // Add button
+  var addEl = document.createElement('div');
+  addEl.className = 'dial add';
+  addEl.style.width = dw + 'px';
+  addEl.style.height = dh + 'px';
+  addEl.innerHTML = '<div style="font-size:24px;margin-bottom:2px">+</div><div style="font-size:11px;color:#606080">Új tárcsa</div>';
+  addEl.onclick = function() { openDialModal(); };
+  grid.appendChild(addEl);
+
+  // Pagination
+  var pagi = document.getElementById('pagi');
+  pagi.innerHTML = '';
+  if (total > 1) {
+    var prev = document.createElement('button');
+    prev.textContent = '◀';
+    prev.disabled = page === 0;
+    prev.onclick = function() { page--; renderDials(); };
+    pagi.appendChild(prev);
+    for (var p = 0; p < total; p++) {
+      (function(pp) {
+        var b = document.createElement('button');
+        b.textContent = pp + 1;
+        if (pp === page) b.className = 'on';
+        b.onclick = function() { page = pp; renderDials(); };
+        pagi.appendChild(b);
+      })(p);
+    }
+    var next = document.createElement('button');
+    next.textContent = '▶';
+    next.disabled = page >= total - 1;
+    next.onclick = function() { page++; renderDials(); };
+    pagi.appendChild(next);
+  }
+}
+
+// === DIAL MODAL ===
+function openDialModal(editDial, prefillUrl, prefillTitle) {
+  var isEdit = !!editDial;
+  var html = '<div class="mhead"><h3>' + (isEdit ? 'Szerkesztés' : 'Új tárcsa') + '</h3><button class="closebtn" onclick="closeModal()">&times;</button></div>';
+  html += '<div class="mbody">';
+  if (!isEdit && groups.length > 1) {
+    html += '<label>Csoport<select id="fGroup">';
+    groups.forEach(function(g, i) {
+      html += '<option value="' + i + '"' + (i === activeGroup ? ' selected' : '') + '>' + esc(g.n) + '</option>';
+    });
+    html += '</select></label>';
+  }
+  html += '<label>URL<input type="url" id="fUrl" placeholder="https://..." value="' + esc(isEdit ? editDial.u : (prefillUrl || '')) + '"></label>';
+  html += '<label>Cím<input type="text" id="fTit" placeholder="Név" value="' + esc(isEdit ? editDial.t : (prefillTitle || '')) + '"></label>';
+  html += '<label>Jegyzet<textarea id="fNote" placeholder="Opcionális...">' + (isEdit ? esc(editDial.m || '') : '') + '</textarea></label>';
+  html += '</div><div class="mfoot"><button class="sbtn" onclick="closeModal()">Mégse</button><button class="pbtn" id="fSave">Mentés</button></div>';
+  showModal(html);
+  setTimeout(function() {
+    document.getElementById('fUrl').focus();
+    document.getElementById('fSave').onclick = function() {
+      var u = document.getElementById('fUrl').value.trim();
+      var t = document.getElementById('fTit').value.trim();
+      var m = document.getElementById('fNote').value.trim();
+      if (!u) { toast('Adj meg URL-t!'); return; }
+      if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+      if (!t) t = getDom(u) || 'Névtelen';
+      if (isEdit) {
+        var g = curGroup();
+        var x = g.d.find(function(x) { return x.i === editDial.i; });
+        if (x) { x.u = u; x.t = t; x.m = m; }
+        toast('Frissítve');
+      } else {
+        var targetIdx = activeGroup;
+        var sel = document.getElementById('fGroup');
+        if (sel) targetIdx = parseInt(sel.value);
+        groups[targetIdx].d.push({i: uid(), t: t, u: u, m: m});
+        if (targetIdx !== activeGroup) {
+          activeGroup = targetIdx;
+        }
+        toast('Hozzáadva: ' + groups[targetIdx].n);
+      }
+      save(); renderDials(); renderGroups(); closeModal();
+    };
+  }, 50);
+}
+
+// === TOP SITES ===
+function openTopSites() {
+  var html = '<div class="mhead"><h3>&#128202; Top oldalak</h3><button class="closebtn" onclick="closeModal()">&times;</button></div><div class="mbody">';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+  SITES.forEach(function(s, i) {
+    html += '<div class="tsi" data-idx="' + i + '"><img src="' + favicon(s[1]) + '" onerror="this.style.display=\'none\'"><span class="nm">' + esc(s[0]) + '</span><span class="ad" data-add="' + i + '">+</span></div>';
+  });
+  html += '</div></div>';
+  showModal(html);
+  setTimeout(function() {
+    document.querySelectorAll('.tsi').forEach(function(el) {
+      el.onclick = function() { window.open(SITES[el.dataset.idx][1], '_blank'); };
+    });
+    document.querySelectorAll('.ad').forEach(function(el) {
+      el.onclick = function(e) {
+        e.stopPropagation();
+        var s = SITES[el.dataset.add];
+        curGroup().d.push({i: uid(), t: s[0], u: s[1], m: ''});
+        save(); renderDials(); renderGroups(); toast(s[0] + ' hozzáadva');
+      };
+    });
+  }, 50);
+}
+
+// === TIMER ===
+var timerInterval = null, timerSec = 0, timerRunning = false, timerCountdown = false, cdTarget = 0;
+
+function timerStr() {
+  var s = timerCountdown ? Math.max(0, cdTarget - timerSec) : timerSec;
+  return [Math.floor(s/3600), Math.floor((s%3600)/60), s%60].map(function(v) { return String(v).padStart(2,'0'); }).join(':');
+}
+
+function openTimer() {
+  var html = '<div class="mhead"><h3>&#9201; Időzítő</h3><button class="closebtn" onclick="closeModal()">&times;</button></div>';
+  html += '<div class="mbody" style="text-align:center">';
+  html += '<div class="tmrd" id="tDisp">' + timerStr() + '</div>';
+  html += '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px">';
+  html += '<button class="pbtn" id="tStart">&#9654; Indítás</button>';
+  html += '<button class="sbtn" id="tPause">&#9208; Szünet</button>';
+  html += '<button class="sbtn" id="tReset">&#128260; Reset</button></div>';
+  html += '<div style="display:flex;gap:16px;justify-content:center;font-size:12px;margin-bottom:10px">';
+  html += '<label><input type="radio" name="tmode" value="sw"' + (!timerCountdown ? ' checked' : '') + '> Stopper</label>';
+  html += '<label><input type="radio" name="tmode" value="cd"' + (timerCountdown ? ' checked' : '') + '> Visszaszámláló</label></div>';
+  html += '<div id="cdRow" style="display:' + (timerCountdown ? 'flex' : 'none') + ';gap:6px;justify-content:center;align-items:center;font-size:12px">';
+  html += '<input type="number" id="cdMin" value="5" min="0" style="width:55px;text-align:center"> perc ';
+  html += '<input type="number" id="cdSec" value="0" min="0" max="59" style="width:55px;text-align:center"> mp</div>';
+  html += '</div>';
+  showModal(html);
+  setTimeout(function() {
+    document.getElementById('tStart').onclick = function() {
+      if (timerRunning) return;
+      if (timerCountdown && timerSec === 0) {
+        cdTarget = (parseInt(document.getElementById('cdMin').value)||0)*60 + (parseInt(document.getElementById('cdSec').value)||0);
+      }
+      timerRunning = true;
+      timerInterval = setInterval(function() {
+        timerSec++;
+        var d = document.getElementById('tDisp');
+        if (d) d.textContent = timerStr();
+        if (timerCountdown && cdTarget - timerSec <= 0) {
+          clearInterval(timerInterval); timerRunning = false; toast('⏰ Lejárt!');
+        }
+      }, 1000);
+    };
+    document.getElementById('tPause').onclick = function() { clearInterval(timerInterval); timerRunning = false; };
+    document.getElementById('tReset').onclick = function() { clearInterval(timerInterval); timerRunning = false; timerSec = 0; cdTarget = 0; var d = document.getElementById('tDisp'); if(d) d.textContent = timerStr(); };
+    document.querySelectorAll('input[name=tmode]').forEach(function(r) {
+      r.onchange = function() {
+        timerCountdown = r.value === 'cd';
+        document.getElementById('cdRow').style.display = timerCountdown ? 'flex' : 'none';
+        clearInterval(timerInterval); timerRunning = false; timerSec = 0; cdTarget = 0;
+        var d = document.getElementById('tDisp'); if(d) d.textContent = timerStr();
+      };
+    });
+  }, 50);
+}
+
+// === NOTES ===
+function openNotes() {
+  var html = '<div class="mhead"><h3>&#128221; Jegyzetek</h3><button class="closebtn" onclick="closeModal()">&times;</button></div>';
+  html += '<div class="mbody"><textarea id="nArea" style="min-height:200px;width:100%;resize:vertical" placeholder="Jegyzeteid...">' + esc(notes) + '</textarea></div>';
+  html += '<div class="mfoot"><button class="sbtn" onclick="closeModal()">Bezárás</button><button class="pbtn" id="nSave">Mentés</button></div>';
+  showModal(html);
+  setTimeout(function() {
+    document.getElementById('nSave').onclick = function() {
+      notes = document.getElementById('nArea').value;
+      save(); toast('Mentve'); closeModal();
+    };
+  }, 50);
+}
+
+// === SETTINGS ===
+var sTab = 'general';
+function openSettings() {
+  var s = settings;
+  var html = '<div class="mhead"><h3>&#9881; Beállítások</h3><button class="closebtn" onclick="closeModal()">&times;</button></div><div class="mbody">';
+  html += '<div class="stabs">';
+  [['general','Általános'],['dials','Tárcsák'],['groups','Csoportok'],['search','Keresés'],['data','Adatok']].forEach(function(x) {
+    html += '<button class="stab' + (sTab === x[0] ? ' on' : '') + '" data-st="' + x[0] + '">' + x[1] + '</button>';
+  });
+  html += '</div>';
+
+  if (sTab === 'general') {
+    html += '<div class="srow"><span style="font-size:12px;font-weight:500">Óra</span><input type="checkbox" id="xClk"' + (s.clk ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#7c83ff"></div>';
+    html += '<div class="srow"><span style="font-size:12px;font-weight:500">Csoportfülek</span><input type="checkbox" id="xTabs"' + (s.tabs ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#7c83ff"></div>';
+    html += '<div class="srow"><span style="font-size:12px;font-weight:500">Új fülön nyitás</span><input type="checkbox" id="xNt"' + (s.nt ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#7c83ff"></div>';
+  }
+  if (sTab === 'dials') {
+    var cg = curGroup();
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:10px">Beállítások a(z) <b style="color:#7c83ff">' + esc(cg.n) + '</b> csoporthoz</div>';
+    [['cols','Oszlopok',2,10,cg.cols||5],['dw','Szélesség (px)',120,400,cg.dw||220],['dh','Magasság (px)',100,350,cg.dh||170],['pp','Tárcsák / oldal',5,50,cg.pp||15]].forEach(function(x) {
+      html += '<div class="rng"><div class="rh"><span style="font-size:12px">' + x[1] + '</span><span class="rv" id="sv_' + x[0] + '">' + x[4] + '</span></div>';
+      html += '<input type="range" id="sr_' + x[0] + '" min="' + x[2] + '" max="' + x[3] + '" value="' + x[4] + '"></div>';
+    });
+    html += '<div style="margin-top:10px"><button class="sbtn" id="copySettingsAll" style="font-size:11px;padding:4px 10px">Alkalmazás minden csoportra</button></div>';
+  }
+  if (sTab === 'groups') {
+    groups.forEach(function(g, i) {
+      html += '<div class="srow"><div style="display:flex;align-items:center;gap:8px"><input type="color" value="' + g.c + '" data-gc="' + i + '" style="width:26px;height:26px;border:none;cursor:pointer"><div><span style="font-size:12px;font-weight:500">' + esc(g.n) + '</span><div style="font-size:10px;color:#606080">' + g.d.length + ' db</div></div></div>';
+      html += '<div style="display:flex;gap:4px"><button class="sbtn" style="padding:3px 8px;font-size:11px" data-gren="' + i + '">Átnevezés</button>';
+      if (i > 0) html += '<button class="sbtn" style="padding:3px 8px;font-size:11px;color:#ff5c6c" data-gdel="' + i + '">Törlés</button>';
+      html += '</div></div>';
+    });
+  }
+  if (sTab === 'search') {
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">Keresőmotor</div>';
+    Object.keys(ENGINES).forEach(function(k) {
+      var n = k === 'ddg' ? 'DuckDuckGo' : k[0].toUpperCase() + k.slice(1);
+      html += '<label style="display:flex;align-items:center;gap:8px;padding:7px;cursor:pointer;border-radius:6px;margin-bottom:2px;' + (s.eng === k ? 'background:rgba(124,131,255,.1)' : '') + '"><input type="radio" name="xEng" value="' + k + '"' + (s.eng === k ? ' checked' : '') + '><span style="font-size:13px">' + n + '</span></label>';
+    });
+  }
+  if (sTab === 'data') {
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:12px">Export / Import</div>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button class="pbtn" id="exportBtn" style="font-size:12px">&#128190; Export JSON</button><button class="sbtn" id="importBtn" style="font-size:12px">&#128194; Import JSON</button><button class="pbtn" id="exportHtmlBtn" style="font-size:12px;background:#2ecc71">&#127760; Export HTML</button><button class="sbtn" id="importHtmlBtn" style="font-size:12px">&#127760; Import HTML</button></div>';
+    html += '<input type="file" id="importFile" accept=".json" style="display:none">';
+    html += '<input type="file" id="importHtmlFile" accept=".html,.htm" style="display:none">';
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:16px"><b>JSON</b>: csak az adatok (csoportok, tárcsák, beállítások, jegyzetek).<br><b>HTML</b>: a teljes alkalmazás az adatokkal együtt — offline is megnyitható!</div>';
+    // Bookmarklet
+    var bmUrl = window.location.origin + window.location.pathname;
+    var bmCode = "javascript:void(window.open('" + bmUrl + "?add='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title)))";
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:12px;margin-bottom:16px">';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">&#128278; Oldal hozzáadása bookmarklet</div>';
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:8px">Húzd ezt a gombot a könyvjelzősávra. Bármilyen oldalon rákattintva hozzáadhatod a Speed Dial-hoz:</div>';
+    html += '<a href="' + esc(bmCode) + '" onclick="event.preventDefault();toast(\'Húzd a könyvjelzősávra!\')" style="display:inline-block;padding:8px 16px;background:#7c83ff;color:#fff;border-radius:8px;text-decoration:none;font-size:12px;font-weight:600;cursor:grab">&#10133; Speed Dial</a>';
+    html += '<div style="font-size:10px;color:#606080;margin-top:6px">Tipp: ha nem látod a könyvjelzősávot, nyomj Ctrl+Shift+B</div>';
+    html += '</div>';
+    // Reset
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:12px">';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px;color:#ff5c6c">Veszélyes zóna</div>';
+    html += '<button class="sbtn" id="resetBtn" style="font-size:11px;color:#ff5c6c;border-color:rgba(255,92,108,.3)">&#128465; Összes adat törlése</button>';
+    html += '</div>';
+  }
+  html += '</div><div class="mfoot"><button class="sbtn" onclick="closeModal()">Bezárás</button><button class="pbtn" id="setSave">Mentés</button></div>';
+  showModal(html, true);
+
+  setTimeout(function() {
+    // Tab switching
+    document.querySelectorAll('[data-st]').forEach(function(b) {
+      b.onclick = function() { sTab = b.dataset.st; openSettings(); };
+    });
+    // Sliders live
+    ['cols','dw','dh','pp'].forEach(function(k) {
+      var sl = document.getElementById('sr_' + k);
+      var sv = document.getElementById('sv_' + k);
+      if (sl && sv) sl.oninput = function() { sv.textContent = sl.value; };
+    });
+    // Copy settings to all groups
+    var csBtn = document.getElementById('copySettingsAll');
+    if (csBtn) {
+      csBtn.onclick = function() {
+        var v = function(id) { return document.getElementById(id); };
+        var nc = parseInt(v('sr_cols').value)||5, nw = parseInt(v('sr_dw').value)||220, nh = parseInt(v('sr_dh').value)||170, np = parseInt(v('sr_pp').value)||15;
+        groups.forEach(function(g) { g.cols = nc; g.dw = nw; g.dh = nh; g.pp = np; });
+        save(); toast('Minden csoportra alkalmazva');
+      };
+    }
+    // Export
+    var expBtn = document.getElementById('exportBtn');
+    if (expBtn) {
+      expBtn.onclick = function() {
+        var data = JSON.stringify({groups: groups, settings: settings, notes: notes, activeGroup: activeGroup, version: '3.0'}, null, 2);
+        var blob = new Blob([data], {type: 'application/json'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'speed-dial-backup-' + new Date().toISOString().slice(0,10) + '.json';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('Exportálva');
+      };
+    }
+    // Import
+    var impBtn = document.getElementById('importBtn');
+    var impFile = document.getElementById('importFile');
+    if (impBtn && impFile) {
+      impBtn.onclick = function() { impFile.click(); };
+      impFile.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            var data = JSON.parse(ev.target.result);
+            if (!data.groups || !Array.isArray(data.groups)) { toast('Hibás fájl!'); return; }
+            if (confirm('Importálás? Ez felülírja a jelenlegi adatokat!')) {
+              groups = data.groups;
+              if (data.settings) settings = Object.assign(settings, data.settings);
+              if (data.notes !== undefined) notes = data.notes;
+              if (typeof data.activeGroup === 'number') activeGroup = data.activeGroup;
+              if (activeGroup >= groups.length) activeGroup = 0;
+              page = 0;
+              save(); applySettings(); renderGroups(); renderDials();
+              toast('Importálva: ' + groups.length + ' csoport');
+              closeModal();
+            }
+          } catch(err) { toast('Hibás JSON fájl!'); }
+        };
+        reader.readAsText(file);
+      };
+    }
+    // HTML Export
+    var expHtmlBtn = document.getElementById('exportHtmlBtn');
+    if (expHtmlBtn) {
+      expHtmlBtn.onclick = function() {
+        // Get the current page HTML and inject data
+        var dataObj = {groups: groups, settings: settings, notes: notes, activeGroup: activeGroup};
+        var dataStr = JSON.stringify(dataObj);
+        // Get full page source
+        var pageHtml = document.documentElement.outerHTML;
+        // Inject embedded data as a script before closing </script>
+        var marker = '// === INIT ===';
+        var embedScript = '// === EMBEDDED DATA ===\nvar _embedded = ' + dataStr + ';\nif(_embedded){groups=_embedded.groups||groups;settings=Object.assign(settings,_embedded.settings||{});notes=_embedded.notes||notes;if(typeof _embedded.activeGroup==="number")activeGroup=_embedded.activeGroup;}\n';
+        pageHtml = pageHtml.replace(marker, embedScript + marker);
+        var blob = new Blob(['<!DOCTYPE html>\n<html' + pageHtml.slice(pageHtml.indexOf('<html') + 5)], {type: 'text/html'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'speed-dial-' + new Date().toISOString().slice(0,10) + '.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('HTML exportálva');
+      };
+    }
+    // HTML Import
+    var impHtmlBtn = document.getElementById('importHtmlBtn');
+    var impHtmlFile = document.getElementById('importHtmlFile');
+    if (impHtmlBtn && impHtmlFile) {
+      impHtmlBtn.onclick = function() { impHtmlFile.click(); };
+      impHtmlFile.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            var htmlStr = ev.target.result;
+            // Try to extract _embedded data
+            var match = htmlStr.match(/var _embedded\s*=\s*(\{[\s\S]*?\});/);
+            if (!match) {
+              // Try to find data in other formats
+              match = htmlStr.match(/"groups"\s*:\s*\[/);
+              if (!match) { toast('Nem találhatók adatok a HTML-ben!'); return; }
+              // Try to extract full JSON object
+              var jsonStart = htmlStr.lastIndexOf('{', match.index);
+              var depth = 0; var jsonEnd = jsonStart;
+              for (var ci = jsonStart; ci < htmlStr.length && ci < jsonStart + 500000; ci++) {
+                if (htmlStr[ci] === '{') depth++;
+                if (htmlStr[ci] === '}') { depth--; if (depth === 0) { jsonEnd = ci + 1; break; } }
+              }
+              match = [null, htmlStr.slice(jsonStart, jsonEnd)];
+            }
+            var data = JSON.parse(match[1]);
+            if (!data.groups || !Array.isArray(data.groups)) { toast('Hibás HTML!'); return; }
+            if (confirm('Importálás HTML-ből? Ez felülírja a jelenlegi adatokat!')) {
+              groups = data.groups;
+              if (data.settings) settings = Object.assign(settings, data.settings);
+              if (data.notes !== undefined) notes = data.notes;
+              if (typeof data.activeGroup === 'number') activeGroup = data.activeGroup;
+              if (activeGroup >= groups.length) activeGroup = 0;
+              page = 0;
+              save(); applySettings(); renderGroups(); renderDials();
+              toast('HTML importálva: ' + groups.length + ' csoport');
+              closeModal();
+            }
+          } catch(err) { toast('Hiba a HTML feldolgozásakor!'); console.error(err); }
+        };
+        reader.readAsText(file);
+      };
+    }
+    // Reset
+    var rstBtn = document.getElementById('resetBtn');
+    if (rstBtn) {
+      rstBtn.onclick = function() {
+        if (confirm('FIGYELEM: Ez törli az összes adatodat! Biztosan folytatod?')) {
+          defaults();
+          save(); applySettings(); renderGroups(); renderDials();
+          toast('Adatok törölve');
+          closeModal();
+        }
+      };
+    }
+    // Group color
+    document.querySelectorAll('[data-gc]').forEach(function(inp) {
+      inp.oninput = function() { groups[parseInt(inp.dataset.gc)].c = inp.value; save(); renderGroups(); };
+    });
+    // Group rename
+    document.querySelectorAll('[data-gren]').forEach(function(btn) {
+      btn.onclick = function() { var i = parseInt(btn.dataset.gren); var n = prompt('Név:', groups[i].n); if (n && n.trim()) { groups[i].n = n.trim(); save(); renderGroups(); openSettings(); } };
+    });
+    // Group delete
+    document.querySelectorAll('[data-gdel]').forEach(function(btn) {
+      btn.onclick = function() { var i = parseInt(btn.dataset.gdel); if (confirm('Törlöd?')) { groups.splice(i, 1); if (activeGroup >= groups.length) activeGroup = groups.length - 1; save(); renderGroups(); renderDials(); openSettings(); } };
+    });
+    // Save
+    document.getElementById('setSave').onclick = function() {
+      var v = function(id) { return document.getElementById(id); };
+      if (v('xClk')) settings.clk = v('xClk').checked;
+      if (v('xTabs')) settings.tabs = v('xTabs').checked;
+      if (v('xNt')) settings.nt = v('xNt').checked;
+      // Save per-group dial settings
+      var cg = curGroup();
+      if (v('sr_cols')) cg.cols = parseInt(v('sr_cols').value) || 5;
+      if (v('sr_dw')) cg.dw = parseInt(v('sr_dw').value) || 220;
+      if (v('sr_dh')) cg.dh = parseInt(v('sr_dh').value) || 170;
+      if (v('sr_pp')) cg.pp = parseInt(v('sr_pp').value) || 15;
+      var en = document.querySelector('input[name=xEng]:checked');
+      if (en) settings.eng = en.value;
+      page = 0; save(); applySettings(); renderDials(); toast('Mentve'); closeModal();
+    };
+  }, 50);
+}
+
+function applySettings() {
+  document.getElementById('clockWidget').style.display = settings.clk ? '' : 'none';
+  document.getElementById('tabsBar').style.display = settings.tabs ? 'flex' : 'none';
+  // Apply theme
+  if (settings.theme === 'light') {
+    document.documentElement.setAttribute('data-t', 'l');
+    document.getElementById('themebtn').textContent = '🌞 Téma';
+  } else {
+    document.documentElement.setAttribute('data-t', '');
+    document.getElementById('themebtn').textContent = '🌙 Téma';
+  }
+}
+
+// === BUTTON HANDLERS ===
+document.getElementById('btnTop').addEventListener('click', function(e) { e.stopPropagation(); openTopSites(); });
+document.getElementById('btnTimer').addEventListener('click', function(e) { e.stopPropagation(); openTimer(); });
+document.getElementById('btnNotes').addEventListener('click', function(e) { e.stopPropagation(); openNotes(); });
+document.getElementById('btnSettings').addEventListener('click', function(e) { e.stopPropagation(); openSettings(); });
+document.getElementById('addGroupBtn').addEventListener('click', function() {
+  var n = prompt('Új csoport neve:');
+  if (n && n.trim()) { groups.push({n: n.trim(), c: COLORS[groups.length % COLORS.length], cols:5, dw:220, dh:170, pp:15, d: []}); activeGroup = groups.length - 1; page = 0; save(); renderGroups(); renderDials(); toast('Létrehozva'); }
+});
+document.getElementById('themebtn').addEventListener('click', function() {
+  var isL = document.documentElement.getAttribute('data-t') === 'l';
+  document.documentElement.setAttribute('data-t', isL ? '' : 'l');
+  document.getElementById('themebtn').textContent = isL ? '🌙 Téma' : '🌞 Téma';
+  settings.theme = isL ? 'dark' : 'light';
+  save();
+});
+
+// === CLOCK ===
+function updateClock() {
+  var n = new Date();
+  document.getElementById('clockTime').textContent = [n.getHours(), n.getMinutes(), n.getSeconds()].map(function(v) { return String(v).padStart(2, '0'); }).join(':');
+  var days = ['Vas','Hét','Kedd','Sze','Csüt','Pén','Szo'];
+  var mos = ['jan','feb','már','ápr','máj','jún','júl','aug','sze','okt','nov','dec'];
+  document.getElementById('clockDate').textContent = n.getFullYear() + '. ' + mos[n.getMonth()] + '. ' + n.getDate() + '. ' + days[n.getDay()];
+}
+
+// === KEYBOARD ===
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// === INIT ===
+load();
+applySettings();
+renderGroups();
+renderDials();
+updateClock();
+setInterval(updateClock, 1000);
+
+// Wait for Google API to load, then init auth
+function waitForGapi() {
+  if (typeof gapi !== 'undefined' && gapi.load) {
+    gapiLoaded();
+  } else {
+    setTimeout(waitForGapi, 200);
+  }
+}
+waitForGapi();
+
+// === URL PARAMETER: ?add=URL&title=TITLE ===
+function checkAddParam() {
+  var params = new URLSearchParams(window.location.search);
+  var addUrl = params.get('add');
+  if (addUrl) {
+    var addTitle = params.get('title') || '';
+    // Wait until logged in and data loaded
+    var checkReady = setInterval(function() {
+      if (groups && groups.length > 0 && document.getElementById('appScreen').style.display === 'block') {
+        clearInterval(checkReady);
+        openDialModal(null, addUrl, addTitle);
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }, 500);
+    // Timeout after 15s
+    setTimeout(function() { clearInterval(checkReady); }, 15000);
+  }
+}
+checkAddParam();
+</script>
+</body>
+</html>
