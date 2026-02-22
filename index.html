@@ -804,6 +804,14 @@ function openSettings() {
     html += '<input type="file" id="importFile" accept=".json" style="display:none">';
     html += '<input type="file" id="importHtmlFile" accept=".html,.htm" style="display:none">';
     html += '<div style="font-size:11px;color:#606080;margin-bottom:16px"><b>JSON</b>: csak az adatok (csoportok, tárcsák, beállítások, jegyzetek).<br><b>HTML</b>: a teljes alkalmazás az adatokkal együtt — offline is megnyitható!</div>';
+    // Browser bookmarks import
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:12px;margin-bottom:16px">';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">&#128278; Böngésző könyvjelzők importálása</div>';
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:8px">Importáld a böngésződből exportált könyvjelzőket (bookmarks.html). A mappák csoportokká válnak.</div>';
+    html += '<button class="pbtn" id="importBookmarksBtn" style="font-size:12px;background:#e67e22">&#128214; Könyvjelzők importálása</button>';
+    html += '<input type="file" id="importBookmarksFile" accept=".html,.htm" style="display:none">';
+    html += '<div style="margin-top:6px"><label style="font-size:11px;color:#9090b0;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="bmReplace" style="accent-color:#7c83ff"> Meglévő csoportok felülírása</label></div>';
+    html += '</div>';
     // Bookmarklet
     var bmUrl = window.location.origin + window.location.pathname;
     var bmCode = "javascript:void(window.open('" + bmUrl + "?add='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title)))";
@@ -970,6 +978,80 @@ function openSettings() {
               closeModal();
             }
           } catch(err) { toast('Hiba a HTML feldolgozásakor!'); console.error(err); }
+        };
+        reader.readAsText(file);
+      };
+    }
+    // Browser Bookmarks Import
+    var bmBtn = document.getElementById('importBookmarksBtn');
+    var bmFile = document.getElementById('importBookmarksFile');
+    if (bmBtn && bmFile) {
+      bmBtn.onclick = function() { bmFile.click(); };
+      bmFile.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            var htm = ev.target.result;
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(htm, 'text/html');
+            var newGroups = [];
+            function parseFolder(dl, folderName) {
+              var items = dl.children;
+              var dials = [];
+              for (var ci = 0; ci < items.length; ci++) {
+                var dt = items[ci];
+                if (dt.tagName !== 'DT') continue;
+                var h3 = dt.querySelector(':scope > H3');
+                var a = dt.querySelector(':scope > A');
+                var subDl = dt.querySelector(':scope > DL');
+                if (h3 && subDl) {
+                  parseFolder(subDl, h3.textContent.trim());
+                } else if (a) {
+                  var href = a.getAttribute('HREF') || a.getAttribute('href') || '';
+                  var title = a.textContent.trim();
+                  if (href && /^https?:\/\//i.test(href)) {
+                    dials.push({i: uid(), t: title, u: href, m: ''});
+                  }
+                }
+              }
+              if (dials.length > 0 && folderName) {
+                newGroups.push({n: folderName, c: COLORS[newGroups.length % COLORS.length], cols: 5, dw: 220, dh: 170, pp: 15, d: dials});
+              }
+            }
+            var rootDl = doc.querySelector('DL');
+            if (!rootDl) { toast('Nem található könyvjelző struktúra!'); return; }
+            var topItems = rootDl.children;
+            for (var ti = 0; ti < topItems.length; ti++) {
+              var dt = topItems[ti];
+              if (dt.tagName !== 'DT') continue;
+              var h3 = dt.querySelector(':scope > H3');
+              var a = dt.querySelector(':scope > A');
+              var subDl = dt.querySelector(':scope > DL');
+              if (h3 && subDl) {
+                parseFolder(subDl, h3.textContent.trim());
+              } else if (a) {
+                var href = a.getAttribute('HREF') || a.getAttribute('href') || '';
+                var title = a.textContent.trim();
+                if (href && /^https?:\/\//i.test(href)) {
+                  var misc = newGroups.find(function(g) { return g.n === 'Egyéb'; });
+                  if (!misc) { misc = {n: 'Egyéb', c: '#95a5a6', cols: 5, dw: 220, dh: 170, pp: 15, d: []}; newGroups.push(misc); }
+                  misc.d.push({i: uid(), t: title, u: href, m: ''});
+                }
+              }
+            }
+            if (newGroups.length === 0) { toast('Nincsenek importálható könyvjelzők!'); return; }
+            var totalDials = newGroups.reduce(function(s, g) { return s + g.d.length; }, 0);
+            var replaceMode = document.getElementById('bmReplace') && document.getElementById('bmReplace').checked;
+            if (confirm('Importálás: ' + newGroups.length + ' csoport, ' + totalDials + ' könyvjelző.\n' + (replaceMode ? 'A meglévő csoportok felülíródnak!' : 'A meglévő csoportokhoz hozzáadódnak.'))) {
+              if (replaceMode) { groups = newGroups; } else { groups = groups.concat(newGroups); }
+              activeGroup = 0; page = 0;
+              save(); applySettings(); renderGroups(); renderDials();
+              toast('Importálva: ' + newGroups.length + ' csoport, ' + totalDials + ' könyvjelző');
+              closeModal();
+            }
+          } catch(err) { toast('Hiba az importáláskor!'); console.error(err); }
         };
         reader.readAsText(file);
       };
