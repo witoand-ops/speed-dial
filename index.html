@@ -9,6 +9,7 @@
 <style>
 
 *{margin:0;padding:0;box-sizing:border-box}
+:root{--fs-tab:13px;--fs-dial:11px;--fs-cat:11px;--fs-logo:15px;--fw-dial:600}
 body{font-family:system-ui,sans-serif;background:#0f0f1a;color:#e8e8f0;min-height:100vh}
 [data-t=l] body{background:#f0f0f8;color:#1a1a2e}
 [data-t=l] header{background:rgba(240,240,248,.9)}
@@ -34,15 +35,22 @@ body{font-family:system-ui,sans-serif;background:#0f0f1a;color:#e8e8f0;min-heigh
 [data-t=l] .hb{color:#555570}
 [data-t=l] .hb:hover{color:#5c63e0;background:rgba(92,99,224,.1)}
 [data-t=l] .addg{border-color:rgba(100,100,180,.3);color:#999}
+[data-t=l] .cat-bar{border-color:rgba(100,100,180,.08)}
+[data-t=l] .cat-btn{color:#555570}
+[data-t=l] .cat-btn.on{color:#5c63e0;background:rgba(92,99,224,.1)}
 [data-t=l] .tsi{border-color:rgba(100,100,180,.12)}
 [data-t=l] .mvi{background:#f8f8fc;border-color:rgba(100,100,180,.12)}
 header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:rgba(15,15,26,.9);border-bottom:1px solid rgba(124,131,255,.15);position:sticky;top:0;z-index:100}
-.logo{font-weight:700;font-size:15px;color:#7c83ff}
+.logo{font-weight:700;font-size:var(--fs-logo);color:#7c83ff}
 .hbtns{display:flex;gap:4px}
 .hb{width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid transparent;border-radius:10px;cursor:pointer;font-size:18px;color:#9090b0}
 .hb:hover{background:rgba(124,131,255,.15);border-color:rgba(124,131,255,.25);color:#7c83ff}
-.tabs{display:flex;align-items:center;gap:4px;padding:8px 20px;border-bottom:1px solid rgba(124,131,255,.15);overflow-x:auto}
-.tab{padding:6px 16px;border:none;border-radius:8px;font-family:inherit;font-size:13px;cursor:pointer;color:#9090b0;background:none;white-space:nowrap}
+.tabs{display:flex;align-items:center;gap:4px;padding:8px 20px;border-bottom:1px solid rgba(124,131,255,.15);flex-wrap:wrap}
+.cat-bar{display:flex;gap:4px;padding:4px 20px;border-bottom:1px solid rgba(124,131,255,.08);overflow-x:auto}
+.cat-btn{padding:4px 12px;border:none;border-radius:6px;font-family:inherit;font-size:var(--fs-cat);cursor:pointer;color:#606080;background:none;white-space:nowrap}
+.cat-btn:hover{background:rgba(124,131,255,.08)}
+.cat-btn.on{color:#7c83ff;background:rgba(124,131,255,.12);font-weight:600}
+.tab{padding:6px 16px;border:none;border-radius:8px;font-family:inherit;font-size:var(--fs-tab);cursor:pointer;color:#9090b0;background:none;white-space:nowrap}
 .tab:hover{background:rgba(124,131,255,.1)}
 .tab.on{color:#fff}
 .addg{width:28px;height:28px;border:1px dashed rgba(124,131,255,.3);border-radius:8px;background:none;color:#606080;font-size:18px;cursor:pointer;margin-left:auto;flex-shrink:0}
@@ -56,7 +64,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .dial .grad{position:absolute;bottom:0;left:0;right:0;height:40px;background:linear-gradient(transparent,rgba(0,0,0,.8))}
 .dial .info{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;gap:5px;padding:7px 10px;z-index:2}
 .dial .info img{width:14px;height:14px;border-radius:2px}
-.dial .info span{font-size:11px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.dial .info span{font-size:var(--fs-dial);font-weight:var(--fw-dial);color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .dial.add{border-style:dashed;border-color:#606080;opacity:.5;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent}
 .dial.add:hover{opacity:1;border-color:#7c83ff}
 #pagi{display:flex;justify-content:center;gap:6px;padding:0 24px 20px;align-items:center}
@@ -129,7 +137,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 <body>
 
 <div id="loginScreen">
-  <h1>&#8862; Speed Dial Groups</h1>
+  <h1><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px;margin-right:6px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Speed Dial Groups</h1>
   <p>Jelentkezz be Google fiókoddal.<br>Az adataid a saját Google Drive-odban tárolódnak, biztonságban.</p>
   <button id="authBtn">&#128274; Bejelentkezés Google-lel</button>
   <div id="authLoading" style="font-size:11px;color:#606080">Google API betöltése...</div>
@@ -142,20 +150,21 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 
 
 <header>
-  <div class="logo">&#8862; Speed Dial Groups</div>
+  <div class="logo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Speed Dial Groups</div>
   <div style="display:flex;align-items:center;gap:6px">
     <div class="user-bar" id="userBar"></div>
     <div class="hbtns">
-      <button class="hb" id="btnTop" title="Top oldalak">&#128202;</button>
-      <button class="hb" id="btnTimer" title="Időzítő">&#9201;</button>
-      <button class="hb" id="btnNotes" title="Jegyzetek">&#128221;</button>
-      <button class="hb" id="btnSettings" title="Beállítások">&#9881;</button>
+      <button class="hb" id="btnTop" title="Top oldalak"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></button>
+      <button class="hb" id="btnTimer" title="Időzítő"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+      <button class="hb" id="btnNotes" title="Jegyzetek"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></button>
+      <button class="hb" id="btnSettings" title="Beállítások"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </div>
 </header>
 
+<div class="cat-bar" id="catBar"></div>
 <div class="tabs" id="tabsBar">
-  <div id="groupTabs" style="display:flex;gap:4px;flex:1;overflow-x:auto"></div>
+  <div id="groupTabs" style="display:flex;gap:4px;flex:1;overflow-x:auto;flex-wrap:wrap"></div>
   <button class="addg" id="addGroupBtn">+</button>
 </div>
 
@@ -166,7 +175,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
   <div class="time" id="clockTime"></div>
   <div class="date" id="clockDate"></div>
 </div>
-<button id="themebtn">&#127769; Téma</button>
+<button id="themebtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Téma</button>
 
 <div class="overlay" id="overlay"></div>
 <div class="sync" id="syncInd"></div>
@@ -328,6 +337,10 @@ function driveLoad() {
       if (d && d.settings) settings = Object.assign(settings, d.settings);
       if (d && d.notes !== undefined) notes = d.notes;
       if (d && typeof d.activeGroup === 'number') activeGroup = d.activeGroup;
+      // Use homeGroup as default on fresh load
+      if (typeof settings.homeGroup === 'number' && settings.homeGroup < groups.length) {
+        activeGroup = settings.homeGroup;
+      }
       if (activeGroup >= groups.length) activeGroup = 0;
       page = 0;
       applySettings();
@@ -411,11 +424,11 @@ var COLORS = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c','#3498db','#9b59
 var SITES = [['Facebook','https://www.facebook.com'],['YouTube','https://www.youtube.com'],['Maps','https://maps.google.com'],['X/Twitter','https://x.com'],['Instagram','https://www.instagram.com'],['LinkedIn','https://www.linkedin.com'],['Amazon','https://www.amazon.com'],['Wikipedia','https://hu.wikipedia.org'],['Netflix','https://www.netflix.com'],['Reddit','https://www.reddit.com']];
 var ENGINES = {google:'https://www.google.com/search?q=',bing:'https://www.bing.com/search?q=',ddg:'https://duckduckgo.com/?q='};
 
-var groups, settings, notes, activeGroup, page, fails;
+var groups, settings, notes, activeGroup, activeCat, page, fails;
 
 function defaults() {
   groups = [
-    {n:'Kezdőlap',c:'#7c83ff',cols:5,dw:220,dh:170,pp:15,d:[
+    {n:'Kezdőlap',c:'#7c83ff',cols:5,rows:3,dw:220,dh:170,d:[
       {i:'1',t:'Google',u:'https://www.google.com',m:''},
       {i:'2',t:'YouTube',u:'https://www.youtube.com',m:''},
       {i:'3',t:'Gmail',u:'https://mail.google.com',m:''},
@@ -427,12 +440,12 @@ function defaults() {
       {i:'9',t:'ChatGPT',u:'https://chat.openai.com',m:''},
       {i:'10',t:'Amazon',u:'https://www.amazon.com',m:''}
     ]},
-    {n:'Munka',c:'#2ecc71',cols:5,dw:220,dh:170,pp:15,d:[
+    {n:'Munka',c:'#2ecc71',cols:5,rows:3,dw:220,dh:170,d:[
       {i:'11',t:'Drive',u:'https://drive.google.com',m:''},
       {i:'12',t:'Slack',u:'https://slack.com',m:''},
       {i:'13',t:'Notion',u:'https://www.notion.so',m:''}
     ]},
-    {n:'Szórakozás',c:'#e74c3c',cols:5,dw:220,dh:170,pp:15,d:[
+    {n:'Szórakozás',c:'#e74c3c',cols:5,rows:3,dw:220,dh:170,d:[
       {i:'14',t:'Netflix',u:'https://www.netflix.com',m:''},
       {i:'15',t:'Spotify',u:'https://www.spotify.com',m:''},
       {i:'16',t:'Twitch',u:'https://www.twitch.tv',m:''}
@@ -441,6 +454,7 @@ function defaults() {
   settings = {eng:'google',clk:true,tabs:true,nt:true};
   notes = '';
   activeGroup = 0;
+  activeCat = '__all__';
   page = 0;
   fails = {};
 }
@@ -483,15 +497,92 @@ function closeModal() {
 }
 
 // === RENDER ===
+function getCategories() {
+  var cats = [];
+  groups.forEach(function(g) {
+    var c = g.cat || '';
+    if (c && cats.indexOf(c) === -1) cats.push(c);
+  });
+  cats.sort();
+  return cats;
+}
+
 function renderGroups() {
+  var cats = getCategories();
+  var catBar = document.getElementById('catBar');
+  
+  // Only show category bar if there are categories
+  if (cats.length > 0) {
+    catBar.style.display = 'flex';
+    catBar.innerHTML = '';
+    // "Összes" button
+    var allBtn = document.createElement('button');
+    allBtn.className = 'cat-btn' + (activeCat === '__all__' ? ' on' : '');
+    allBtn.textContent = 'Összes (' + groups.length + ')';
+    allBtn.onclick = function() { activeCat = '__all__'; renderGroups(); };
+    catBar.appendChild(allBtn);
+    // "Nincs kategória" button
+    var uncatCount = groups.filter(function(g) { return !g.cat; }).length;
+    if (uncatCount > 0) {
+      var uncatBtn = document.createElement('button');
+      uncatBtn.className = 'cat-btn' + (activeCat === '__none__' ? ' on' : '');
+      uncatBtn.textContent = 'Kategorizálatlan (' + uncatCount + ')';
+      uncatBtn.onclick = function() { activeCat = '__none__'; renderGroups(); };
+      catBar.appendChild(uncatBtn);
+    }
+    cats.forEach(function(cat) {
+      var count = groups.filter(function(g) { return g.cat === cat; }).length;
+      var btn = document.createElement('button');
+      btn.className = 'cat-btn' + (activeCat === cat ? ' on' : '');
+      btn.textContent = cat + ' (' + count + ')';
+      btn.onclick = function() { activeCat = cat; renderGroups(); };
+      catBar.appendChild(btn);
+    });
+  } else {
+    catBar.style.display = 'none';
+  }
+
+  // Filter groups by active category
+  var filteredIndices = [];
+  groups.forEach(function(g, i) {
+    if (activeCat === '__all__') { filteredIndices.push(i); }
+    else if (activeCat === '__none__' && !g.cat) { filteredIndices.push(i); }
+    else if (g.cat === activeCat) { filteredIndices.push(i); }
+  });
+
   var c = document.getElementById('groupTabs');
   c.innerHTML = '';
-  groups.forEach(function(g, i) {
+  filteredIndices.forEach(function(i) {
+    var g = groups[i];
     var b = document.createElement('button');
     b.className = 'tab' + (i === activeGroup ? ' on' : '');
     b.innerHTML = esc(g.n) + ' <span style="font-size:10px;opacity:.6">(' + g.d.length + ')</span>';
     if (i === activeGroup) { b.style.background = g.c; b.style.borderColor = g.c; }
     b.onclick = function() { activeGroup = i; page = 0; save(); renderGroups(); renderDials(); };
+    // Drag groups to reorder
+    b.draggable = true;
+    b.dataset.gi = i;
+    b.addEventListener('dragstart', function(e) { e.dataTransfer.setData('text/plain', 'group:' + i); b.style.opacity = '0.4'; });
+    b.addEventListener('dragend', function() { b.style.opacity = '1'; });
+    b.addEventListener('dragover', function(e) { e.preventDefault(); b.style.borderColor = '#7c83ff'; });
+    b.addEventListener('dragleave', function() { b.style.borderColor = ''; });
+    b.addEventListener('drop', function(e) {
+      e.preventDefault(); b.style.borderColor = '';
+      var data = e.dataTransfer.getData('text/plain');
+      if (data.indexOf('group:') === 0) {
+        var fromIdx = parseInt(data.slice(6));
+        var toIdx = i;
+        if (fromIdx !== toIdx) {
+          var item = groups.splice(fromIdx, 1)[0];
+          groups.splice(toIdx, 0, item);
+          if (activeGroup === fromIdx) activeGroup = toIdx;
+          else if (fromIdx < activeGroup && toIdx >= activeGroup) activeGroup--;
+          else if (fromIdx > activeGroup && toIdx <= activeGroup) activeGroup++;
+          save(); renderGroups(); renderDials();
+          toast('Csoport áthelyezve');
+        }
+      }
+    });
     c.appendChild(b);
   });
 }
@@ -502,11 +593,13 @@ function renderDials() {
   if (!g) return;
   grid.innerHTML = '';
   // Per-group settings with fallback
-  var pp = g.pp || 15;
+  var rows = g.rows || 3;
+  var cols = g.cols || 5;
+  var pp = rows * cols;
   var total = Math.max(1, Math.ceil(g.d.length / pp));
   if (page >= total) page = total - 1;
   var dw = g.dw || 220, dh = g.dh || 170;
-  grid.style.gridTemplateColumns = 'repeat(' + (g.cols||5) + ',' + dw + 'px)';
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ',' + dw + 'px)';
 
   var start = page * pp;
   var slice = g.d.slice(start, start + pp);
@@ -529,7 +622,7 @@ function renderDials() {
       h += '<div class="fallback" style="background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, dw * 0.18) + 'px">' + letter + '</div>';
     }
     h += '</div><div class="grad"></div>';
-    h += '<button class="refresh-btn" data-dial-idx="' + idx + '" title="Kép frissítése">&#8635;</button>';
+    h += '<button class="refresh-btn" data-dial-idx="' + idx + '" title="Kép frissítése"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>';
     h += '<div class="info"><img src="' + esc(favicon(d.u)) + '" onerror="this.style.display=\'none\'"><span>' + esc(d.t || domain || '?') + '</span></div>';
     el.innerHTML = h;
     // Drag & drop
@@ -591,7 +684,7 @@ function renderDials() {
   addEl.className = 'dial add';
   addEl.style.width = dw + 'px';
   addEl.style.height = dh + 'px';
-  addEl.innerHTML = '<div style="font-size:24px;margin-bottom:2px">+</div><div style="font-size:11px;color:#606080">Új tárcsa</div>';
+  addEl.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div style="font-size:11px;color:#606080;margin-top:2px">Új tárcsa</div>';
   addEl.onclick = function() { openDialModal(); };
   grid.appendChild(addEl);
 
@@ -764,7 +857,7 @@ function openSettings() {
   var s = settings;
   var html = '<div class="mhead"><h3>&#9881; Beállítások</h3><button class="closebtn" onclick="closeModal()">&times;</button></div><div class="mbody">';
   html += '<div class="stabs">';
-  [['general','Általános'],['dials','Tárcsák'],['groups','Csoportok'],['search','Keresés'],['data','Adatok']].forEach(function(x) {
+  [['general','Általános'],['dials','Tárcsák'],['look','Megjelenés'],['groups','Csoportok'],['search','Keresés'],['data','Adatok']].forEach(function(x) {
     html += '<button class="stab' + (sTab === x[0] ? ' on' : '') + '" data-st="' + x[0] + '">' + x[1] + '</button>';
   });
   html += '</div>';
@@ -777,19 +870,68 @@ function openSettings() {
   if (sTab === 'dials') {
     var cg = curGroup();
     html += '<div style="font-size:11px;color:#606080;margin-bottom:10px">Beállítások a(z) <b style="color:#7c83ff">' + esc(cg.n) + '</b> csoporthoz</div>';
-    [['cols','Oszlopok',2,10,cg.cols||5],['dw','Szélesség (px)',120,400,cg.dw||220],['dh','Magasság (px)',100,350,cg.dh||170],['pp','Tárcsák / oldal',5,50,cg.pp||15]].forEach(function(x) {
+    [['cols','Oszlopok',2,10,cg.cols||5],['rows','Sorok',1,10,cg.rows||3],['dw','Szélesség (px)',120,400,cg.dw||220],['dh','Magasság (px)',100,350,cg.dh||170]].forEach(function(x) {
       html += '<div class="rng"><div class="rh"><span style="font-size:12px">' + x[1] + '</span><span class="rv" id="sv_' + x[0] + '">' + x[4] + '</span></div>';
       html += '<input type="range" id="sr_' + x[0] + '" min="' + x[2] + '" max="' + x[3] + '" value="' + x[4] + '"></div>';
     });
     html += '<div style="margin-top:10px"><button class="sbtn" id="copySettingsAll" style="font-size:11px;padding:4px 10px">Alkalmazás minden csoportra</button></div>';
   }
+  if (sTab === 'look') {
+    var lk = settings.look || {};
+    // Font family
+    var fonts = [['system-ui, sans-serif','Rendszer (alapértelmezett)'],['Inter, sans-serif','Inter'],['Roboto, sans-serif','Roboto'],['Poppins, sans-serif','Poppins'],['Nunito, sans-serif','Nunito'],['Fira Sans, sans-serif','Fira Sans'],['Source Sans Pro, sans-serif','Source Sans Pro'],['Montserrat, sans-serif','Montserrat'],['Lato, sans-serif','Lato'],['Open Sans, sans-serif','Open Sans'],['monospace','Monospace']];
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:6px">Betűtípus</div>';
+    html += '<select id="lkFont" style="width:100%;padding:6px 8px;margin-bottom:14px;font-size:12px;background:#1c1c35;color:#e8e8f0;border:1px solid rgba(124,131,255,.15);border-radius:6px">';
+    fonts.forEach(function(f) {
+      html += '<option value="' + f[0] + '"' + ((lk.font||'system-ui, sans-serif') === f[0] ? ' selected' : '') + ' style="font-family:' + f[0] + '">' + f[1] + '</option>';
+    });
+    html += '</select>';
+    // Font sizes
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">Betűméretek</div>';
+    [['fsTab','Fülcímkék (px)',9,18,lk.fsTab||13],['fsDial','Tárcsacím (px)',8,16,lk.fsDial||11],['fsCat','Kategória (px)',9,16,lk.fsCat||11],['fsLogo','Logo (px)',12,24,lk.fsLogo||15]].forEach(function(x) {
+      html += '<div class="rng"><div class="rh"><span style="font-size:12px">' + x[1] + '</span><span class="rv" id="sv_' + x[0] + '">' + x[4] + '</span></div>';
+      html += '<input type="range" id="sr_' + x[0] + '" min="' + x[2] + '" max="' + x[3] + '" value="' + x[4] + '"></div>';
+    });
+    // Font weight
+    html += '<div style="margin-top:8px"><div style="font-size:12px;font-weight:500;margin-bottom:6px">Tárcsacím vastagság</div>';
+    html += '<select id="lkFw" style="padding:4px 8px;font-size:12px;background:#1c1c35;color:#e8e8f0;border:1px solid rgba(124,131,255,.15);border-radius:6px">';
+    [['400','Normál'],['500','Közepes'],['600','Félkövér'],['700','Kövér']].forEach(function(w) {
+      html += '<option value="' + w[0] + '"' + ((lk.fw||'600') === w[0] ? ' selected' : '') + '>' + w[1] + '</option>';
+    });
+    html += '</select></div>';
+    // Preview
+    html += '<div style="margin-top:14px;padding:12px;border:1px solid rgba(124,131,255,.15);border-radius:8px;text-align:center" id="lkPreview">';
+    html += '<div style="font-size:11px;color:#606080;margin-bottom:4px">Előnézet</div>';
+    html += '<div id="lkPrevText" style="font-family:' + (lk.font||'system-ui, sans-serif') + '">Speed Dial Groups — 0123456789</div>';
+    html += '</div>';
+  }
   if (sTab === 'groups') {
+    // Category management
+    var cats = getCategories();
+    html += '<div style="margin-bottom:12px">';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:6px">Kategóriák</div>';
+    if (cats.length > 0) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
+      cats.forEach(function(c) { html += '<span style="font-size:11px;padding:3px 8px;background:rgba(124,131,255,.12);border-radius:4px;color:#7c83ff">' + esc(c) + '</span>'; });
+      html += '</div>';
+    }
+    html += '<div style="display:flex;gap:4px"><input type="text" id="newCatInput" placeholder="Új kategória neve..." style="flex:1;font-size:11px;padding:4px 8px"><button class="sbtn" id="addCatBtn" style="padding:3px 8px;font-size:11px">Hozzáadás</button></div>';
+    html += '</div>';
+    html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:10px">';
     groups.forEach(function(g, i) {
-      html += '<div class="srow"><div style="display:flex;align-items:center;gap:8px"><input type="color" value="' + g.c + '" data-gc="' + i + '" style="width:26px;height:26px;border:none;cursor:pointer"><div><span style="font-size:12px;font-weight:500">' + esc(g.n) + '</span><div style="font-size:10px;color:#606080">' + g.d.length + ' db</div></div></div>';
-      html += '<div style="display:flex;gap:4px"><button class="sbtn" style="padding:3px 8px;font-size:11px" data-gren="' + i + '">Átnevezés</button>';
-      if (i > 0) html += '<button class="sbtn" style="padding:3px 8px;font-size:11px;color:#ff5c6c" data-gdel="' + i + '">Törlés</button>';
+      var isHome = (settings.homeGroup === i) || (!settings.homeGroup && i === 0);
+      html += '<div class="srow" style="flex-wrap:wrap"><div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0"><input type="color" value="' + g.c + '" data-gc="' + i + '" style="width:26px;height:26px;border:none;cursor:pointer;flex-shrink:0"><div style="min-width:0"><span style="font-size:12px;font-weight:500">' + esc(g.n) + (isHome ? ' &#127968;' : '') + '</span><div style="font-size:10px;color:#606080">' + g.d.length + ' db' + (g.cat ? ' · ' + esc(g.cat) : '') + '</div></div></div>';
+      html += '<div style="display:flex;gap:4px;flex-wrap:wrap">';
+      // Category select
+      html += '<select data-gcat="' + i + '" style="font-size:11px;padding:2px 4px;background:#1c1c35;color:#9090b0;border:1px solid rgba(124,131,255,.15);border-radius:4px"><option value="">(nincs)</option>';
+      cats.forEach(function(c) { html += '<option value="' + esc(c) + '"' + (g.cat === c ? ' selected' : '') + '>' + esc(c) + '</option>'; });
+      html += '</select>';
+      if (!isHome) html += '<button class="sbtn" style="padding:3px 8px;font-size:11px" data-ghome="' + i + '" title="Kezdőlap">&#127968;</button>';
+      html += '<button class="sbtn" style="padding:3px 8px;font-size:11px" data-gren="' + i + '">Átnevezés</button>';
+      html += '<button class="sbtn" style="padding:3px 8px;font-size:11px;color:#ff5c6c" data-gdel="' + i + '">Törlés</button>';
       html += '</div></div>';
     });
+    html += '</div>';
   }
   if (sTab === 'search') {
     html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">Keresőmotor</div>';
@@ -836,18 +978,33 @@ function openSettings() {
       b.onclick = function() { sTab = b.dataset.st; openSettings(); };
     });
     // Sliders live
-    ['cols','dw','dh','pp'].forEach(function(k) {
+    ['cols','rows','dw','dh','fsTab','fsDial','fsCat','fsLogo'].forEach(function(k) {
       var sl = document.getElementById('sr_' + k);
       var sv = document.getElementById('sv_' + k);
-      if (sl && sv) sl.oninput = function() { sv.textContent = sl.value; };
+      if (sl && sv) {
+        sl.oninput = function() {
+          sv.textContent = sl.value;
+          // Live preview for font sizes
+          var prev = document.getElementById('lkPrevText');
+          if (prev && k.indexOf('fs') === 0) prev.style.fontSize = sl.value + 'px';
+        };
+      }
     });
+    // Font family live preview
+    var fontSel = document.getElementById('lkFont');
+    if (fontSel) {
+      fontSel.onchange = function() {
+        var prev = document.getElementById('lkPrevText');
+        if (prev) prev.style.fontFamily = fontSel.value;
+      };
+    }
     // Copy settings to all groups
     var csBtn = document.getElementById('copySettingsAll');
     if (csBtn) {
       csBtn.onclick = function() {
         var v = function(id) { return document.getElementById(id); };
-        var nc = parseInt(v('sr_cols').value)||5, nw = parseInt(v('sr_dw').value)||220, nh = parseInt(v('sr_dh').value)||170, np = parseInt(v('sr_pp').value)||15;
-        groups.forEach(function(g) { g.cols = nc; g.dw = nw; g.dh = nh; g.pp = np; });
+        var nc = parseInt(v('sr_cols').value)||5, nr = parseInt(v('sr_rows').value)||3, nw = parseInt(v('sr_dw').value)||220, nh = parseInt(v('sr_dh').value)||170;
+        groups.forEach(function(g) { g.cols = nc; g.rows = nr; g.dw = nw; g.dh = nh; });
         save(); toast('Minden csoportra alkalmazva');
       };
     }
@@ -1072,13 +1229,41 @@ function openSettings() {
     document.querySelectorAll('[data-gc]').forEach(function(inp) {
       inp.oninput = function() { groups[parseInt(inp.dataset.gc)].c = inp.value; save(); renderGroups(); };
     });
+    // Group category
+    document.querySelectorAll('[data-gcat]').forEach(function(sel) {
+      sel.onchange = function() { groups[parseInt(sel.dataset.gcat)].cat = sel.value || ''; save(); renderGroups(); openSettings(); };
+    });
+    // Set as home
+    document.querySelectorAll('[data-ghome]').forEach(function(btn) {
+      btn.onclick = function() { settings.homeGroup = parseInt(btn.dataset.ghome); save(); toast('Kezdőlap beállítva'); openSettings(); };
+    });
+    // Add new category
+    var addCatBtn = document.getElementById('addCatBtn');
+    if (addCatBtn) {
+      addCatBtn.onclick = function() {
+        var inp = document.getElementById('newCatInput');
+        var v = inp ? inp.value.trim() : '';
+        if (!v) { toast('Adj meg nevet!'); return; }
+        // Add as a dummy to ensure it shows in dropdowns - assign to first uncategorized group if any
+        var uncatGroup = groups.find(function(g) { return !g.cat; });
+        if (uncatGroup) {
+          uncatGroup.cat = v;
+          save();
+          toast('"' + uncatGroup.n + '" hozzárendelve: ' + v);
+        } else {
+          toast('Kategória: ' + v + ' — rendeld hozzá a csoportokhoz!');
+        }
+        renderGroups();
+        openSettings();
+      };
+    }
     // Group rename
     document.querySelectorAll('[data-gren]').forEach(function(btn) {
       btn.onclick = function() { var i = parseInt(btn.dataset.gren); var n = prompt('Név:', groups[i].n); if (n && n.trim()) { groups[i].n = n.trim(); save(); renderGroups(); openSettings(); } };
     });
     // Group delete
     document.querySelectorAll('[data-gdel]').forEach(function(btn) {
-      btn.onclick = function() { var i = parseInt(btn.dataset.gdel); if (confirm('Törlöd?')) { groups.splice(i, 1); if (activeGroup >= groups.length) activeGroup = groups.length - 1; save(); renderGroups(); renderDials(); openSettings(); } };
+      btn.onclick = function() { var i = parseInt(btn.dataset.gdel); if (confirm('Törlöd: ' + groups[i].n + '?')) { groups.splice(i, 1); if (activeGroup >= groups.length) activeGroup = groups.length - 1; save(); renderGroups(); renderDials(); openSettings(); } };
     });
     // Save
     document.getElementById('setSave').onclick = function() {
@@ -1089,12 +1274,22 @@ function openSettings() {
       // Save per-group dial settings
       var cg = curGroup();
       if (v('sr_cols')) cg.cols = parseInt(v('sr_cols').value) || 5;
+      if (v('sr_rows')) cg.rows = parseInt(v('sr_rows').value) || 3;
       if (v('sr_dw')) cg.dw = parseInt(v('sr_dw').value) || 220;
       if (v('sr_dh')) cg.dh = parseInt(v('sr_dh').value) || 170;
-      if (v('sr_pp')) cg.pp = parseInt(v('sr_pp').value) || 15;
       var en = document.querySelector('input[name=xEng]:checked');
       if (en) settings.eng = en.value;
-      page = 0; save(); applySettings(); renderDials(); toast('Mentve'); closeModal();
+      // Save look settings
+      if (!settings.look) settings.look = {};
+      var lkFont = document.getElementById('lkFont');
+      if (lkFont) settings.look.font = lkFont.value;
+      var lkFw = document.getElementById('lkFw');
+      if (lkFw) settings.look.fw = lkFw.value;
+      ['fsTab','fsDial','fsCat','fsLogo'].forEach(function(k) {
+        var el = document.getElementById('sr_' + k);
+        if (el) settings.look[k] = parseInt(el.value);
+      });
+      page = 0; save(); applySettings(); renderGroups(); renderDials(); toast('Mentve'); closeModal();
     };
   }, 50);
 }
@@ -1102,13 +1297,35 @@ function openSettings() {
 function applySettings() {
   document.getElementById('clockWidget').style.display = settings.clk ? '' : 'none';
   document.getElementById('tabsBar').style.display = settings.tabs ? 'flex' : 'none';
+  // Apply look
+  var lk = settings.look || {};
+  document.body.style.fontFamily = lk.font || 'system-ui, sans-serif';
+  // Load Google Font if needed
+  var gf = lk.font || '';
+  var fontName = gf.split(',')[0].trim();
+  if (fontName && fontName !== 'system-ui' && fontName !== 'monospace') {
+    var linkId = 'gfont-' + fontName.replace(/\s/g, '');
+    if (!document.getElementById(linkId)) {
+      var link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(fontName) + ':wght@400;500;600;700&display=swap';
+      document.head.appendChild(link);
+    }
+  }
+  // Apply font sizes via CSS custom properties
+  document.documentElement.style.setProperty('--fs-tab', (lk.fsTab || 13) + 'px');
+  document.documentElement.style.setProperty('--fs-dial', (lk.fsDial || 11) + 'px');
+  document.documentElement.style.setProperty('--fs-cat', (lk.fsCat || 11) + 'px');
+  document.documentElement.style.setProperty('--fs-logo', (lk.fsLogo || 15) + 'px');
+  document.documentElement.style.setProperty('--fw-dial', lk.fw || '600');
   // Apply theme
   if (settings.theme === 'light') {
     document.documentElement.setAttribute('data-t', 'l');
-    document.getElementById('themebtn').textContent = '🌞 Téma';
+    document.getElementById('themebtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Téma';
   } else {
     document.documentElement.setAttribute('data-t', '');
-    document.getElementById('themebtn').textContent = '🌙 Téma';
+    document.getElementById('themebtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Téma';
   }
 }
 
@@ -1119,14 +1336,13 @@ document.getElementById('btnNotes').addEventListener('click', function(e) { e.st
 document.getElementById('btnSettings').addEventListener('click', function(e) { e.stopPropagation(); openSettings(); });
 document.getElementById('addGroupBtn').addEventListener('click', function() {
   var n = prompt('Új csoport neve:');
-  if (n && n.trim()) { groups.push({n: n.trim(), c: COLORS[groups.length % COLORS.length], cols:5, dw:220, dh:170, pp:15, d: []}); activeGroup = groups.length - 1; page = 0; save(); renderGroups(); renderDials(); toast('Létrehozva'); }
+  if (n && n.trim()) { groups.push({n: n.trim(), c: COLORS[groups.length % COLORS.length], cols:5, rows:3, dw:220, dh:170, d: []}); activeGroup = groups.length - 1; page = 0; save(); renderGroups(); renderDials(); toast('Létrehozva'); }
 });
 document.getElementById('themebtn').addEventListener('click', function() {
   var isL = document.documentElement.getAttribute('data-t') === 'l';
-  document.documentElement.setAttribute('data-t', isL ? '' : 'l');
-  document.getElementById('themebtn').textContent = isL ? '🌙 Téma' : '🌞 Téma';
   settings.theme = isL ? 'dark' : 'light';
   save();
+  applySettings();
 });
 
 // === CLOCK ===
