@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%237c83ff'/%3E%3Crect x='4' y='4' width='10' height='10' rx='2' fill='%23fff' fill-opacity='.9'/%3E%3Crect x='18' y='4' width='10' height='10' rx='2' fill='%23fff' fill-opacity='.7'/%3E%3Crect x='4' y='18' width='10' height='10' rx='2' fill='%23fff' fill-opacity='.7'/%3E%3Crect x='18' y='18' width='10' height='10' rx='2' fill='%23fff' fill-opacity='.5'/%3E%3C/svg%3E">
 <title>Speed Dial Groups</title>
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -55,7 +56,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .tab.on{color:#fff}
 .addg{width:28px;height:28px;border:1px dashed rgba(124,131,255,.3);border-radius:8px;background:none;color:#606080;font-size:18px;cursor:pointer;margin-left:auto;flex-shrink:0}
 .addg:hover{color:#7c83ff;border-color:#7c83ff}
-#grid{display:grid;gap:16px;padding:24px;justify-content:center}
+#grid{display:grid;gap:16px;padding:24px;justify-content:center;width:100%}
 .dial{border-radius:12px;cursor:pointer;position:relative;overflow:hidden;border:1px solid rgba(124,131,255,.15);background:#1c1c35;transition:transform .2s,box-shadow .2s}
 .dial:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.3)}
 .dial .thumb{position:absolute;inset:0}
@@ -599,7 +600,15 @@ function renderDials() {
   var total = Math.max(1, Math.ceil(g.d.length / pp));
   if (page >= total) page = total - 1;
   var dw = g.dw || 220, dh = g.dh || 170;
-  grid.style.gridTemplateColumns = 'repeat(' + cols + ',' + dw + 'px)';
+  // Auto-fit: calc available width, shrink dw if needed to fit cols
+  var gap = 16;
+  var pad = 48; // 24px * 2
+  var avail = window.innerWidth - pad;
+  var actualDw = Math.min(dw, Math.floor((avail - gap * (cols - 1)) / cols));
+  actualDw = Math.max(100, actualDw);
+  var actualDh = Math.round(dh * (actualDw / dw));
+  grid.style.gridTemplateColumns = 'repeat(' + cols + ',' + actualDw + 'px)';
+  grid.style.justifyContent = 'center';
 
   var start = page * pp;
   var slice = g.d.slice(start, start + pp);
@@ -608,8 +617,8 @@ function renderDials() {
     var idx = start + i;
     var el = document.createElement('div');
     el.className = 'dial';
-    el.style.width = dw + 'px';
-    el.style.height = dh + 'px';
+    el.style.width = actualDw + 'px';
+    el.style.height = actualDh + 'px';
     var domain = getDom(d.u);
     var letter = (d.t || domain || '?')[0].toUpperCase();
     var col = getColor(domain || d.t || '?');
@@ -617,9 +626,9 @@ function renderDials() {
     var h = '<div class="thumb">';
     if (!fails[d.i]) {
       h += '<img src="' + esc(imgSrc) + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
-      h += '<div class="fallback" style="display:none;background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, dw * 0.18) + 'px">' + letter + '</div>';
+      h += '<div class="fallback" style="display:none;background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, actualDw * 0.18) + 'px">' + letter + '</div>';
     } else {
-      h += '<div class="fallback" style="background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, dw * 0.18) + 'px">' + letter + '</div>';
+      h += '<div class="fallback" style="background:linear-gradient(135deg,' + col + 'cc,' + col + '66);font-size:' + Math.max(28, actualDw * 0.18) + 'px">' + letter + '</div>';
     }
     h += '</div><div class="grad"></div>';
     h += '<button class="refresh-btn" data-dial-idx="' + idx + '" title="Kép frissítése"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>';
@@ -682,8 +691,8 @@ function renderDials() {
   // Add button
   var addEl = document.createElement('div');
   addEl.className = 'dial add';
-  addEl.style.width = dw + 'px';
-  addEl.style.height = dh + 'px';
+  addEl.style.width = actualDw + 'px';
+  addEl.style.height = actualDh + 'px';
   addEl.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><div style="font-size:11px;color:#606080;margin-top:2px">Új tárcsa</div>';
   addEl.onclick = function() { openDialModal(); };
   grid.appendChild(addEl);
@@ -866,6 +875,8 @@ function openSettings() {
     html += '<div class="srow"><span style="font-size:12px;font-weight:500">Óra</span><input type="checkbox" id="xClk"' + (s.clk ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#7c83ff"></div>';
     html += '<div class="srow"><span style="font-size:12px;font-weight:500">Csoportfülek</span><input type="checkbox" id="xTabs"' + (s.tabs ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#7c83ff"></div>';
     html += '<div class="srow"><span style="font-size:12px;font-weight:500">Új fülön nyitás</span><input type="checkbox" id="xNt"' + (s.nt ? ' checked' : '') + ' style="width:18px;height:18px;accent-color:#7c83ff"></div>';
+    html += '<div class="rng"><div class="rh"><span style="font-size:12px">Csoportfülek max sorai</span><span class="rv" id="sv_tabRows">' + (s.tabRows||3) + '</span></div>';
+    html += '<input type="range" id="sr_tabRows" min="1" max="10" value="' + (s.tabRows||3) + '"></div>';
   }
   if (sTab === 'dials') {
     var cg = curGroup();
@@ -951,6 +962,7 @@ function openSettings() {
     html += '<div style="font-size:12px;font-weight:500;margin-bottom:8px">&#128278; Böngésző könyvjelzők importálása</div>';
     html += '<div style="font-size:11px;color:#606080;margin-bottom:8px">Importáld a böngésződből exportált könyvjelzőket (bookmarks.html). A mappák csoportokká válnak.</div>';
     html += '<button class="pbtn" id="importBookmarksBtn" style="font-size:12px;background:#e67e22">&#128214; Könyvjelzők importálása</button>';
+    html += '<button class="sbtn" id="exportBookmarksBtn" style="font-size:12px;margin-left:4px">&#128214; Könyvjelzők exportálása</button>';
     html += '<input type="file" id="importBookmarksFile" accept=".html,.htm" style="display:none">';
     html += '<div style="margin-top:6px"><label style="font-size:11px;color:#9090b0;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="bmReplace" style="accent-color:#7c83ff"> Meglévő csoportok felülírása</label></div>';
     html += '</div>';
@@ -978,7 +990,7 @@ function openSettings() {
       b.onclick = function() { sTab = b.dataset.st; openSettings(); };
     });
     // Sliders live
-    ['cols','rows','dw','dh','fsTab','fsDial','fsCat','fsLogo'].forEach(function(k) {
+    ['cols','rows','dw','dh','fsTab','fsDial','fsCat','fsLogo','tabRows'].forEach(function(k) {
       var sl = document.getElementById('sr_' + k);
       var sv = document.getElementById('sv_' + k);
       if (sl && sv) {
@@ -1213,6 +1225,36 @@ function openSettings() {
         reader.readAsText(file);
       };
     }
+    // Browser Bookmarks Export
+    var bmExpBtn = document.getElementById('exportBookmarksBtn');
+    if (bmExpBtn) {
+      bmExpBtn.onclick = function() {
+        var lines = [];
+        lines.push('<!DOCTYPE NETSCAPE-Bookmark-file-1>');
+        lines.push('<!-- Speed Dial Groups - Bookmarks Export -->');
+        lines.push('<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">');
+        lines.push('<TITLE>Bookmarks</TITLE>');
+        lines.push('<H1>Speed Dial Groups</H1>');
+        lines.push('<DL><p>');
+        groups.forEach(function(g) {
+          var ts = Math.floor(Date.now() / 1000);
+          lines.push('    <DT><H3 ADD_DATE="' + ts + '">' + esc(g.n) + '</H3>');
+          lines.push('    <DL><p>');
+          g.d.forEach(function(d) {
+            lines.push('        <DT><A HREF="' + esc(d.u) + '" ADD_DATE="' + ts + '">' + esc(d.t || getDom(d.u)) + '</A>');
+          });
+          lines.push('    </DL><p>');
+        });
+        lines.push('</DL><p>');
+        var blob = new Blob([lines.join('\n')], {type: 'text/html'});
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'speed-dial-bookmarks-' + new Date().toISOString().slice(0,10) + '.html';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('Könyvjelzők exportálva');
+      };
+    }
     // Reset
     var rstBtn = document.getElementById('resetBtn');
     if (rstBtn) {
@@ -1271,6 +1313,7 @@ function openSettings() {
       if (v('xClk')) settings.clk = v('xClk').checked;
       if (v('xTabs')) settings.tabs = v('xTabs').checked;
       if (v('xNt')) settings.nt = v('xNt').checked;
+      if (v('sr_tabRows')) settings.tabRows = parseInt(v('sr_tabRows').value) || 3;
       // Save per-group dial settings
       var cg = curGroup();
       if (v('sr_cols')) cg.cols = parseInt(v('sr_cols').value) || 5;
@@ -1297,6 +1340,14 @@ function openSettings() {
 function applySettings() {
   document.getElementById('clockWidget').style.display = settings.clk ? '' : 'none';
   document.getElementById('tabsBar').style.display = settings.tabs ? 'flex' : 'none';
+  // Tab rows limit
+  var tabRows = settings.tabRows || 3;
+  var groupTabs = document.getElementById('groupTabs');
+  if (groupTabs) {
+    var lineH = 36; // approx tab height + gap
+    groupTabs.style.maxHeight = (tabRows * lineH) + 'px';
+    groupTabs.style.overflowY = tabRows < 10 ? 'auto' : 'visible';
+  }
   // Apply look
   var lk = settings.look || {};
   document.body.style.fontFamily = lk.font || 'system-ui, sans-serif';
@@ -1357,6 +1408,13 @@ function updateClock() {
 // === KEYBOARD ===
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeModal();
+});
+
+// === RESIZE ===
+var _resizeTimer;
+window.addEventListener('resize', function() {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(function() { renderDials(); }, 150);
 });
 
 // === INIT ===
