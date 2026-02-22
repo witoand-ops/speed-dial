@@ -189,6 +189,7 @@ var DATA_FILE = 'speed-dial-data.json';
 var tokenClient = null;
 var accessToken = null;
 var driveFileId = null;
+var driveLoaded = false;
 
 // Called when gapi.js loads
 function gapiLoaded() {
@@ -317,6 +318,7 @@ function driveLoad() {
     if (!found) {
       // First time - use defaults, then save
       syncMsg('Új profil');
+      driveLoaded = true;
       return driveSaveNow();
     }
     return gapi.client.drive.files.get({fileId: driveFileId, alt: 'media'}).then(function(r) {
@@ -330,6 +332,7 @@ function driveLoad() {
       applySettings();
       renderGroups();
       renderDials();
+      driveLoaded = true;
       syncMsg('✓ Betöltve');
       setTimeout(function() { syncMsg(''); }, 2500);
     });
@@ -1058,9 +1061,9 @@ function checkAddParam() {
   var addUrl = params.get('add');
   if (addUrl) {
     var addTitle = params.get('title') || '';
-    // Wait until logged in and data loaded
+    // Wait until logged in AND Drive data loaded
     var checkReady = setInterval(function() {
-      if (groups && groups.length > 0 && document.getElementById('appScreen').style.display === 'block') {
+      if (driveLoaded && document.getElementById('appScreen').style.display === 'block') {
         clearInterval(checkReady);
         openDialModal(null, addUrl, addTitle);
         // Clean URL
