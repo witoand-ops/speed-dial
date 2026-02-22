@@ -319,6 +319,7 @@ function driveLoad() {
       // First time - use defaults, then save
       syncMsg('Új profil');
       driveLoaded = true;
+      checkAddParam();
       return driveSaveNow();
     }
     return gapi.client.drive.files.get({fileId: driveFileId, alt: 'media'}).then(function(r) {
@@ -335,6 +336,8 @@ function driveLoad() {
       driveLoaded = true;
       syncMsg('✓ Betöltve');
       setTimeout(function() { syncMsg(''); }, 2500);
+      // Check if there's a pending add from bookmarklet
+      checkAddParam();
     });
   }).catch(function(e) {
     console.error('Drive load error:', e);
@@ -623,10 +626,10 @@ function openDialModal(editDial, prefillUrl, prefillTitle) {
   var isEdit = !!editDial;
   var html = '<div class="mhead"><h3>' + (isEdit ? 'Szerkesztés' : 'Új tárcsa') + '</h3><button class="closebtn" onclick="closeModal()">&times;</button></div>';
   html += '<div class="mbody">';
-  if (!isEdit && groups.length > 1) {
+  if (!isEdit && groups.length >= 1) {
     html += '<label>Csoport<select id="fGroup">';
     groups.forEach(function(g, i) {
-      html += '<option value="' + i + '"' + (i === activeGroup ? ' selected' : '') + '>' + esc(g.n) + '</option>';
+      html += '<option value="' + i + '"' + (i === activeGroup ? ' selected' : '') + '>' + esc(g.n) + ' (' + g.d.length + ')</option>';
     });
     html += '</select></label>';
   }
@@ -1056,25 +1059,21 @@ function waitForGapi() {
 waitForGapi();
 
 // === URL PARAMETER: ?add=URL&title=TITLE ===
+var _addHandled = false;
 function checkAddParam() {
+  if (_addHandled) return;
   var params = new URLSearchParams(window.location.search);
   var addUrl = params.get('add');
-  if (addUrl) {
+  if (addUrl && driveLoaded) {
+    _addHandled = true;
     var addTitle = params.get('title') || '';
-    // Wait until logged in AND Drive data loaded
-    var checkReady = setInterval(function() {
-      if (driveLoaded && document.getElementById('appScreen').style.display === 'block') {
-        clearInterval(checkReady);
-        openDialModal(null, addUrl, addTitle);
-        // Clean URL
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-    }, 500);
-    // Timeout after 15s
-    setTimeout(function() { clearInterval(checkReady); }, 15000);
+    // Small delay to ensure DOM is fully settled
+    setTimeout(function() {
+      openDialModal(null, addUrl, addTitle);
+    }, 300);
+    window.history.replaceState({}, '', window.location.pathname);
   }
 }
-checkAddParam();
 </script>
 </body>
 </html>
