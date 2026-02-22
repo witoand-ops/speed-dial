@@ -920,15 +920,18 @@ function openSettings() {
     // Category management
     var cats = getCategories();
     html += '<div style="margin-bottom:12px">';
-    html += '<div style="font-size:12px;font-weight:500;margin-bottom:6px">Kategóriák</div>';
+    html += '<div style="font-size:12px;font-weight:500;margin-bottom:6px">Kategóriák <span style="font-size:10px;color:#606080;font-weight:400">— húzd a csoportokat ide</span></div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px" id="catDropZone">';
+    // "No category" drop target
+    var uncatCnt = groups.filter(function(g) { return !g.cat; }).length;
+    html += '<div class="cat-drop" data-catdrop="" style="font-size:11px;padding:6px 12px;background:rgba(255,92,108,.08);border:2px dashed rgba(255,92,108,.2);border-radius:6px;color:#ff5c6c;cursor:default;transition:all .2s">Nincs (' + uncatCnt + ')</div>';
     if (cats.length > 0) {
-      html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
       cats.forEach(function(c) {
         var cnt = groups.filter(function(g) { return g.cat === c; }).length;
-        html += '<span style="font-size:11px;padding:3px 8px;background:rgba(124,131,255,.12);border-radius:4px;color:#7c83ff">' + esc(c) + ' (' + cnt + ')</span>';
+        html += '<div class="cat-drop" data-catdrop="' + esc(c) + '" style="font-size:11px;padding:6px 12px;background:rgba(124,131,255,.08);border:2px dashed rgba(124,131,255,.2);border-radius:6px;color:#7c83ff;cursor:default;transition:all .2s">' + esc(c) + ' (' + cnt + ')</div>';
       });
-      html += '</div>';
     }
+    html += '</div>';
     html += '<div style="display:flex;gap:4px"><input type="text" id="newCatInput" placeholder="Új kategória neve..." style="flex:1;font-size:11px;padding:4px 8px"><button class="sbtn" id="addCatBtn" style="padding:3px 8px;font-size:11px">Hozzáadás</button></div>';
     html += '</div>';
     // Bulk categorization
@@ -947,12 +950,13 @@ function openSettings() {
     html += '<button class="sbtn" id="bulkSelUncat" style="font-size:10px;padding:2px 8px">Csak kategorizálatlanok</button>';
     html += '</div>';
     html += '</div>';
-    // Group list with checkboxes
+    // Group list with checkboxes - draggable rows
     html += '<div style="border-top:1px solid rgba(124,131,255,.1);padding-top:8px;max-height:400px;overflow-y:auto" id="grpList">';
     groups.forEach(function(g, i) {
       var isHome = (settings.homeGroup === i) || (!settings.homeGroup && i === 0);
-      html += '<div class="srow" style="flex-wrap:wrap;padding:5px 0;min-height:0">';
+      html += '<div class="srow grp-drag" draggable="true" data-grpi="' + i + '" style="flex-wrap:wrap;padding:5px 0;min-height:0;cursor:grab;transition:opacity .2s">';
       html += '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">';
+      html += '<span style="color:#404060;font-size:10px;cursor:grab;flex-shrink:0" title="Húzd egy kategóriára">&#9776;</span>';
       html += '<input type="checkbox" class="bulk-cb" data-bi="' + i + '" style="width:16px;height:16px;accent-color:#7c83ff;flex-shrink:0">';
       html += '<input type="color" value="' + g.c + '" data-gc="' + i + '" style="width:20px;height:20px;border:none;cursor:pointer;flex-shrink:0">';
       html += '<div style="min-width:0;overflow:hidden"><span style="font-size:11px;font-weight:500;white-space:nowrap">' + esc(g.n) + (isHome ? ' &#127968;' : '') + '</span>';
@@ -1295,9 +1299,52 @@ function openSettings() {
     document.querySelectorAll('[data-gc]').forEach(function(inp) {
       inp.oninput = function() { groups[parseInt(inp.dataset.gc)].c = inp.value; save(); renderGroups(); };
     });
-    // Group category
+    // Group category (individual dropdown)
     document.querySelectorAll('[data-gcat]').forEach(function(sel) {
       sel.onchange = function() { groups[parseInt(sel.dataset.gcat)].cat = sel.value || ''; save(); renderGroups(); openSettings(); };
+    });
+    // Drag groups to category badges
+    document.querySelectorAll('.grp-drag').forEach(function(row) {
+      row.addEventListener('dragstart', function(e) {
+        e.dataTransfer.setData('text/plain', 'grpcat:' + row.dataset.grpi);
+        row.style.opacity = '0.3';
+      });
+      row.addEventListener('dragend', function() { row.style.opacity = '1'; });
+    });
+    document.querySelectorAll('.cat-drop').forEach(function(badge) {
+      badge.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        badge.style.borderColor = '#7c83ff';
+        badge.style.background = 'rgba(124,131,255,.25)';
+        badge.style.transform = 'scale(1.05)';
+      });
+      badge.addEventListener('dragleave', function() {
+        badge.style.borderColor = '';
+        badge.style.background = '';
+        badge.style.transform = '';
+      });
+      badge.addEventListener('drop', function(e) {
+        e.preventDefault();
+        badge.style.borderColor = '';
+        badge.style.background = '';
+        badge.style.transform = '';
+        var data = e.dataTransfer.getData('text/plain');
+        if (data.indexOf('grpcat:') === 0) {
+          var idx = parseInt(data.slice(7));
+          var newCat = badge.dataset.catdrop;
+          // Also move any checked groups
+          var checked = document.querySelectorAll('.bulk-cb:checked');
+          var indices = [idx];
+          checked.forEach(function(cb) {
+            var bi = parseInt(cb.dataset.bi);
+            if (indices.indexOf(bi) === -1) indices.push(bi);
+          });
+          indices.forEach(function(gi) { groups[gi].cat = newCat; });
+          save(); renderGroups();
+          toast(indices.length + ' csoport → ' + (newCat || 'nincs kategória'));
+          openSettings();
+        }
+      });
     });
     // Set as home
     document.querySelectorAll('[data-ghome]').forEach(function(btn) {
