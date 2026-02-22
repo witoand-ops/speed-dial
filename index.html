@@ -890,15 +890,18 @@ function openSettings() {
     var expHtmlBtn = document.getElementById('exportHtmlBtn');
     if (expHtmlBtn) {
       expHtmlBtn.onclick = function() {
-        // Get the current page HTML and inject data
+        // Encode data as base64 to avoid any parsing issues
         var dataObj = {groups: groups, settings: settings, notes: notes, activeGroup: activeGroup};
-        var dataStr = JSON.stringify(dataObj);
+        var dataB64 = btoa(unescape(encodeURIComponent(JSON.stringify(dataObj))));
         // Get full page source
         var pageHtml = document.documentElement.outerHTML;
-        // Inject embedded data as a script before closing tag
+        // Insert a data tag right before </head>
+        var dataTag = '<script id="sd-embedded-data" type="application/json">' + dataB64 + '</' + 'script>';
+        pageHtml = pageHtml.replace('</head>', dataTag + '\n</head>');
+        // Also inject loader code that reads the embedded data on load
+        var loaderCode = '\n// === LOAD EMBEDDED DATA ===\n(function(){var el=document.getElementById("sd-embedded-data");if(el){try{var d=JSON.parse(decodeURIComponent(escape(atob(el.textContent.trim()))));if(d&&d.groups){groups=d.groups;if(d.settings)settings=Object.assign(settings,d.settings);if(d.notes!==undefined)notes=d.notes;if(typeof d.activeGroup==="number")activeGroup=d.activeGroup;if(activeGroup>=groups.length)activeGroup=0;page=0;}}catch(e){console.error("Embedded data error:",e);}}})();\n';
         var marker = '// === INIT ===';
-        var embedScript = '// === EMBEDDED DATA ===\nvar _embedded = ' + dataStr + ';\nif(_embedded){groups=_embedded.groups||groups;settings=Object.assign(settings,_embedded.settings||{});notes=_embedded.notes||notes;if(typeof _embedded.activeGroup==="number")activeGroup=_embedded.activeGroup;}\n';
-        pageHtml = pageHtml.replace(marker, embedScript + marker);
+        pageHtml = pageHtml.replace(marker, loaderCode + marker);
         var blob = new Blob(['<!DOCTYPE html>\n<html' + pageHtml.slice(pageHtml.indexOf('<html') + 5)], {type: 'text/html'});
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -920,23 +923,41 @@ function openSettings() {
         reader.onload = function(ev) {
           try {
             var htmlStr = ev.target.result;
-            // Try to extract _embedded data
-            var match = htmlStr.match(/var _embedded\s*=\s*(\{[\s\S]*?\});/);
-            if (!match) {
-              // Try to find data in other formats
-              match = htmlStr.match(/"groups"\s*:\s*\[/);
-              if (!match) { toast('Nem találhatók adatok a HTML-ben!'); return; }
-              // Try to extract full JSON object
-              var jsonStart = htmlStr.lastIndexOf('{', match.index);
-              var depth = 0; var jsonEnd = jsonStart;
-              for (var ci = jsonStart; ci < htmlStr.length && ci < jsonStart + 500000; ci++) {
-                if (htmlStr[ci] === '{') depth++;
-                if (htmlStr[ci] === '}') { depth--; if (depth === 0) { jsonEnd = ci + 1; break; } }
-              }
-              match = [null, htmlStr.slice(jsonStart, jsonEnd)];
+            var data = null;
+            // Method 1: Look for base64 encoded data in sd-embedded-data tag
+            var b64Match = htmlStr.match(/id="sd-embedded-data"[^>]*>([^<]+)</);
+            if (b64Match) {
+              try {
+                data = JSON.parse(decodeURIComponent(escape(atob(b64Match[1].trim()))));
+              } catch(e) { console.error('Base64 decode error:', e); }
             }
-            var data = JSON.parse(match[1]);
-            if (!data.groups || !Array.isArray(data.groups)) { toast('Hibás HTML!'); return; }
+            // Method 2: Look for old-style _embedded variable
+            if (!data) {
+              var embMatch = htmlStr.match(/var _embedded\s*=\s*(\{[\s\S]*?\});/);
+              if (embMatch) {
+                try { data = JSON.parse(embMatch[1]); } catch(e) {}
+              }
+            }
+            // Method 3: Try to find JSON with groups array
+            if (!data) {
+              var gMatch = htmlStr.match(/"groups"\s*:\s*\[/);
+              if (gMatch) {
+                var searchStart = Math.max(0, gMatch.index - 50);
+                var chunk = htmlStr.slice(searchStart, Math.min(htmlStr.length, searchStart + 500000));
+                var braceStart = chunk.indexOf('{');
+                if (braceStart >= 0) {
+                  var depth = 0;
+                  for (var ci = braceStart; ci < chunk.length; ci++) {
+                    if (chunk[ci] === '{') depth++;
+                    if (chunk[ci] === '}') { depth--; if (depth === 0) { try { data = JSON.parse(chunk.slice(braceStart, ci + 1)); } catch(e) {} break; } }
+                  }
+                }
+              }
+            }
+            if (!data || !data.groups || !Array.isArray(data.groups)) {
+              toast('Nem találhatók adatok a HTML-ben!');
+              return;
+            }
             if (confirm('Importálás HTML-ből? Ez felülírja a jelenlegi adatokat!')) {
               groups = data.groups;
               if (data.settings) settings = Object.assign(settings, data.settings);
