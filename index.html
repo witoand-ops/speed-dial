@@ -1870,23 +1870,6 @@ document.addEventListener('contextmenu', function(e) {
         }
       }});
     }
-    items.push('---');
-    // Get groups in this category
-    var catGroups = [];
-    if (isAll) { catGroups = groups; }
-    else if (isNone) { catGroups = groups.filter(function(g) { return !g.cat; }); }
-    else { catGroups = groups.filter(function(g) { return g.cat === catName; }); }
-    var totalDials = catGroups.reduce(function(s, g) { return s + g.d.length; }, 0);
-    items.push({label: '&#128196; Minden tárcsa megnyitása (' + totalDials + ')', action: function() {
-      if (totalDials > 20 && !confirm(totalDials + ' oldalt nyitunk meg. Folytatod?')) return;
-      catGroups.forEach(function(g) { g.d.forEach(function(d) { window.open(d.u, '_blank'); }); });
-      toast(totalDials + ' oldal megnyitva');
-    }});
-    items.push({label: '&#128247; Minden kép frissítése (' + totalDials + ')', action: function() {
-      catGroups.forEach(function(g) { g.d.forEach(function(d) { d.img = ''; delete fails[d.i]; }); });
-      save(); renderDials();
-      toast(totalDials + ' kép frissítés...');
-    }});
     showCtxMenu(e.clientX, e.clientY, items);
     return;
   }
