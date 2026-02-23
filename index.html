@@ -1720,6 +1720,48 @@ function showCtxMenu(x, y, items) {
 function hideCtxMenu() { document.getElementById('ctxMenu').classList.remove('v'); }
 document.addEventListener('click', hideCtxMenu);
 document.addEventListener('contextmenu', function(e) {
+  // Check if right-clicked on a group tab
+  var tabEl = e.target.closest('.tab');
+  if (tabEl && tabEl.closest('#groupTabs')) {
+    e.preventDefault();
+    var gi = parseInt(tabEl.dataset.gi);
+    if (isNaN(gi) || !groups[gi]) return;
+    var grp = groups[gi];
+    var items = [
+      {label: '&#10133; Új csoport létrehozása', action: function() {
+        var name = prompt('Új csoport neve:');
+        if (name && name.trim()) {
+          groups.push({n: name.trim(), c: COLORS[groups.length % COLORS.length], cols: 5, rows: 3, dw: 220, dh: 170, d: [], cat: grp.cat || ''});
+          save(); renderGroups(); toast('Csoport létrehozva: ' + name.trim());
+        }
+      }},
+      {label: '&#9998; Átnevezés', action: function() {
+        var name = prompt('Új név:', grp.n);
+        if (name && name.trim()) { grp.n = name.trim(); save(); renderGroups(); toast('Átnevezve'); }
+      }},
+      {label: '&#128465; Csoport törlése', action: function() {
+        if (confirm('Törlöd a "' + grp.n + '" csoportot és az összes benne lévő tárcsát?')) {
+          groups.splice(gi, 1);
+          if (activeGroup >= groups.length) activeGroup = Math.max(0, groups.length - 1);
+          save(); renderGroups(); renderDials();
+          toast('Csoport törölve');
+        }
+      }},
+      '---',
+      {label: '&#128196; Minden tárcsa megnyitása (' + grp.d.length + ')', action: function() {
+        if (grp.d.length > 10 && !confirm(grp.d.length + ' oldalt nyitunk meg. Folytatod?')) return;
+        grp.d.forEach(function(d, di) { setTimeout(function() { window.open(d.u, '_blank'); }, di * 100); });
+        toast(grp.d.length + ' oldal megnyitása...');
+      }},
+      {label: '&#128247; Minden kép frissítése (' + grp.d.length + ')', action: function() {
+        grp.d.forEach(function(d) { d.img = ''; delete fails[d.i]; });
+        save(); renderDials();
+        toast(grp.d.length + ' kép frissítés...');
+      }}
+    ];
+    showCtxMenu(e.clientX, e.clientY, items);
+    return;
+  }
   // Check if right-clicked on a dial
   var dialEl = e.target.closest('.dial:not(.add)');
   if (dialEl) {
