@@ -480,7 +480,7 @@ function favicon(u) { return 'https://www.google.com/s2/favicons?domain='+getDom
 function screenshot(u) { return 'https://image.thum.io/get/width/400/'+u; }
 function getCachedImg(d) {
   if (d.img) return d.img;
-  return screenshot(d.u) + '?t=' + (d._lt || (d._lt = Date.now()));
+  return screenshot(d.u) + '?t=' + Date.now() + Math.random().toString(36).slice(2,5);
 }
 // Cache image URL into dial data when it loads successfully (debounced save)
 var _cacheTimer = null;
@@ -1749,9 +1749,12 @@ document.addEventListener('contextmenu', function(e) {
       }},
       '---',
       {label: '&#128196; Minden tárcsa megnyitása (' + grp.d.length + ')', action: function() {
+        if (grp.d.length === 0) return;
         if (grp.d.length > 10 && !confirm(grp.d.length + ' oldalt nyitunk meg. Folytatod?')) return;
-        grp.d.forEach(function(d, di) { setTimeout(function() { window.open(d.u, '_blank'); }, di * 100); });
-        toast(grp.d.length + ' oldal megnyitása...');
+        grp.d.forEach(function(d) {
+          var a = document.createElement('a'); a.href = d.u; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        });
+        toast(grp.d.length + ' oldal megnyitva');
       }},
       {label: '&#128247; Minden kép frissítése (' + grp.d.length + ')', action: function() {
         grp.d.forEach(function(d) { d.img = ''; delete fails[d.i]; });
@@ -1775,9 +1778,12 @@ document.addEventListener('contextmenu', function(e) {
       {label: '&#128448; Megnyitás itt', action: function() { window.open(d.u, '_self'); }},
       '---',
       {label: '&#128196; Minden oldal megnyitása új lapon (' + g.d.length + ')', action: function() {
+        if (g.d.length === 0) return;
         if (g.d.length > 10 && !confirm(g.d.length + ' oldalt nyitunk meg. Folytatod?')) return;
-        g.d.forEach(function(dial, di) { setTimeout(function() { window.open(dial.u, '_blank'); }, di * 100); });
-        toast(g.d.length + ' oldal megnyitása...');
+        g.d.forEach(function(dial) {
+          var a = document.createElement('a'); a.href = dial.u; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        });
+        toast(g.d.length + ' oldal megnyitva');
       }},
       {label: '&#128247; Kép frissítése', action: function() {
         d.img = '';
@@ -1815,10 +1821,12 @@ document.addEventListener('contextmenu', function(e) {
       '---',
       {label: '&#128196; Minden oldal megnyitása', action: function() {
         var g = curGroup();
-        if (g) {
+        if (g && g.d.length > 0) {
           if (g.d.length > 10 && !confirm(g.d.length + ' oldalt nyitunk meg. Folytatod?')) return;
-          g.d.forEach(function(d, di) { setTimeout(function() { window.open(d.u, '_blank'); }, di * 100); });
-          toast(g.d.length + ' oldal megnyitása...');
+          g.d.forEach(function(d) {
+            var a = document.createElement('a'); a.href = d.u; a.target = '_blank'; a.rel = 'noopener'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          });
+          toast(g.d.length + ' oldal megnyitva');
         }
       }},
       {label: '&#128247; Összes kép frissítése', action: function() {
